@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fretes – Motorista</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icone-192.png">
+  <link rel="apple-touch-icon" href="icone-192.png">
+  <meta charset="utf-8">
+  <meta name="theme-color" content="#1f4e78">
+  <style>
+  :root {
+    --azul: #1f4e78;
+    --azul-claro: #e8f0f8;
+    --verde: #1e7a34;
+    --laranja: #c55a11;
+    --vermelho: #b3261e;
+    --amarelo: #fff4ce;
+    --cinza: #5f6368;
+    --borda: #b9c3cc;
+    --fundo: #f4f6f8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Roboto, "Segoe UI", Arial, sans-serif;
+    font-size: 18px;
+    line-height: 1.4;
+    color: #1b1b1b;
+    background: var(--fundo);
+  }
+  main { max-width: 560px; margin: 0 auto; padding: 12px 16px 48px; }
+  h1 { font-size: 26px; margin: 8px 0 12px; color: var(--azul); }
+  .oculto { display: none !important; }
+  .centro { text-align: center; }
+  .grande { font-size: 24px; font-weight: bold; }
+  .pequeno { font-size: 14px; color: var(--cinza); }
+
+  .topo {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--azul); color: #fff; padding: 12px 16px;
+  }
+  .topo-titulo { font-size: 20px; font-weight: bold; }
+  .topo-motorista { font-size: 15px; opacity: .9; text-align: right; }
+
+  .faixa { padding: 10px 16px; font-size: 16px; display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  .faixa-aviso { background: var(--amarelo); border-bottom: 1px solid #e0c96b; }
+  .faixa-info { background: var(--azul-claro); border-radius: 8px; margin: 8px 0; }
+
+  .rotulo { display: block; font-weight: bold; margin: 18px 0 6px; }
+  .campo {
+    width: 100%; font-size: 20px; padding: 12px; min-height: 54px;
+    border: 2px solid var(--borda); border-radius: 10px; background: #fff; color: inherit;
+    font-family: inherit;
+  }
+  .campo:focus { outline: none; border-color: var(--azul); }
+  .campo.invalido { border-color: var(--vermelho); background: #fdf1f0; }
+  .campo-pin { letter-spacing: 12px; text-align: center; font-size: 28px; }
+  .obrigatorio { color: var(--vermelho); font-weight: normal; }
+
+  .btn {
+    display: block; width: 100%; min-height: 60px; margin: 14px 0 0; padding: 14px;
+    font-size: 20px; font-weight: bold; border: 0; border-radius: 12px; cursor: pointer;
+    text-align: center; text-decoration: none; font-family: inherit;
+  }
+  .btn:disabled { opacity: .6; }
+  .btn-principal { background: var(--azul); color: #fff; margin-top: 24px; }
+  .btn-voltar { background: #fff; color: var(--azul); border: 2px solid var(--azul); }
+  .btn-pequeno { width: auto; min-height: 40px; padding: 6px 14px; margin: 0; font-size: 16px; background: var(--azul); color: #fff; }
+  .btn-gigante { min-height: 150px; font-size: 24px; font-weight: normal; color: #fff; margin: 18px 0 0; line-height: 1.3; }
+  .btn-gigante b { font-size: 30px; }
+  .btn-gigante .icone { display: block; font-size: 34px; }
+  .btn-carregar { background: var(--verde); }
+  .btn-descarregar { background: var(--laranja); }
+  .btn-foto { background: var(--azul-claro); color: var(--azul); border: 2px dashed var(--azul); }
+  .btn-foto.tem-foto { border-style: solid; background: #e6f4ea; color: var(--verde); border-color: var(--verde); }
+  .btn-foto-secundario { font-weight: normal; }
+  .btn-whatsapp { background: #25d366; color: #fff; }
+  .btn-link {
+    background: none; border: 0; color: var(--azul); text-decoration: underline;
+    font-size: 17px; padding: 12px 0; margin: 18px auto 0; display: block; cursor: pointer; font-family: inherit;
+  }
+
+  .foto { margin-top: 6px; }
+  .foto-previa { display: block; max-width: 100%; max-height: 220px; margin: 10px auto 0; border-radius: 8px; border: 1px solid var(--borda); }
+
+  .calculado { margin-top: 12px; padding: 12px; background: var(--azul-claro); border-radius: 10px; font-size: 19px; }
+  .calculado.alerta { background: var(--amarelo); }
+
+  .erro { color: var(--vermelho); font-weight: bold; margin: 16px 0 0; white-space: pre-line; }
+  .aviso { background: var(--amarelo); padding: 8px 12px; border-radius: 8px; margin: 8px 0 0; font-size: 16px; }
+
+  .auto { position: relative; }
+  .auto-lista {
+    position: absolute; left: 0; right: 0; top: 100%; z-index: 10;
+    background: #fff; border: 2px solid var(--azul); border-top: 0; border-radius: 0 0 10px 10px;
+    max-height: 320px; overflow-y: auto; box-shadow: 0 6px 16px rgba(0, 0, 0, .15);
+  }
+  .auto-item { padding: 14px 12px; border-bottom: 1px solid #e3e7eb; cursor: pointer; font-size: 18px; }
+  .auto-item:active, .auto-item:hover { background: var(--azul-claro); }
+  .auto-item.outro { color: var(--azul); font-style: italic; }
+  .auto-vazio { padding: 12px; color: var(--cinza); font-size: 16px; }
+
+  .cartao { background: #fff; border: 2px solid var(--borda); border-radius: 12px; padding: 14px; margin: 10px 0; }
+  .cartao b { font-size: 19px; }
+  .cartao-viagem { cursor: pointer; }
+  .cartao-viagem:active { border-color: var(--azul); background: var(--azul-claro); }
+  .cartao .linha { color: var(--cinza); font-size: 16px; margin-top: 4px; }
+
+  .subtitulo-linha { display: flex; justify-content: space-between; align-items: baseline; margin-top: 28px; }
+  .subtitulo { font-size: 21px; color: var(--azul); margin: 0; }
+  .btn-link-inline { margin: 0; padding: 4px 0; display: inline; }
+  .etiqueta { display: inline-block; font-size: 14px; font-weight: bold; padding: 2px 10px; border-radius: 999px; margin-left: 6px; vertical-align: middle; }
+  .etiqueta-aberta { background: #fde7d6; color: var(--laranja); }
+  .etiqueta-ok { background: #e6f4ea; color: var(--verde); }
+  .etiqueta-fila { background: var(--amarelo); color: #7a5b00; }
+  .etiqueta-cancelada { background: #eceff1; color: var(--cinza); }
+  .cartao-acao { margin-top: 8px; font-weight: bold; color: var(--laranja); font-size: 17px; }
+
+  .ok { color: var(--verde); font-size: 30px; margin-top: 24px; }
+  .codigo {
+    text-align: center; font-size: 34px; font-weight: bold; letter-spacing: 1px;
+    background: #fff; border: 3px solid var(--verde); border-radius: 12px; padding: 14px; margin: 8px 0 16px;
+    user-select: all;
+  }
+  .resumo {
+    white-space: pre-wrap; font-family: inherit; font-size: 16px;
+    background: #fff; border: 1px solid var(--borda); border-radius: 10px; padding: 12px;
+  }
+
+  .mensagem {
+    position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 50;
+    background: #323232; color: #fff; padding: 14px 16px; border-radius: 10px; font-size: 17px;
+    max-width: 528px; margin: 0 auto;
+  }
+</style>
+
+</head>
+<body>
+  <header class="topo">
+    <span class="topo-titulo">🚛 Fretes</span>
+    <span id="topo-motorista" class="topo-motorista"></span>
+  </header>
+
+  <div id="faixa-pendentes" class="faixa faixa-aviso oculto">
+    <span id="faixa-pendentes-texto"></span>
+    <button type="button" id="faixa-btn-enviar" class="btn btn-pequeno" onclick="enviarPendentes()">Enviar agora</button>
+    <button type="button" id="faixa-btn-corrigir" class="btn btn-pequeno oculto" onclick="corrigirPendente()">Corrigir</button>
+  </div>
+  <div id="faixa-offline" class="faixa faixa-info oculto">Sem conexão com o servidor. Usando os dados guardados no celular.</div>
+
+  <main>
+    <!-- CARREGANDO -->
+    <section id="tela-carregando" class="tela">
+      <p class="centro grande">Carregando…</p>
+    </section>
+
+    <!-- ENTRAR -->
+    <section id="tela-entrar" class="tela oculto">
+      <h1>Quem é você?</h1>
+      <label class="rotulo" for="entrar-nome">Motorista</label>
+      <select id="entrar-nome" class="campo"></select>
+      <label class="rotulo" for="entrar-pin">PIN (4 números)</label>
+      <input id="entrar-pin" class="campo campo-pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off">
+      <p id="entrar-erro" class="erro oculto"></p>
+      <button type="button" class="btn btn-principal" onclick="entrar()">Entrar</button>
+    </section>
+
+    <!-- INÍCIO -->
+    <section id="tela-inicio" class="tela oculto">
+      <button type="button" class="btn btn-gigante btn-carregar" onclick="abrirCarregamento()">
+        <span class="icone">⬆️</span>Registrar<br><b>CARREGAMENTO</b>
+      </button>
+      <button type="button" class="btn btn-gigante btn-descarregar" onclick="abrirDescarga()">
+        <span class="icone">⬇️</span>Registrar<br><b>DESCARGA</b>
+      </button>
+
+      <div class="subtitulo-linha">
+        <h2 class="subtitulo">Minhas viagens</h2>
+        <button type="button" class="btn-link btn-link-inline" onclick="carregarMinhasViagens()">Atualizar</button>
+      </div>
+      <div id="minhas-lista"></div>
+
+      <button type="button" class="btn-link" onclick="sair()">Trocar de motorista</button>
+    </section>
+
+    <!-- CARREGAMENTO -->
+    <section id="tela-carregamento" class="tela oculto">
+      <h1>Carregamento</h1>
+      <p id="car-rascunho" class="faixa faixa-info oculto">
+        Continuando o que você começou antes.
+        <button type="button" class="btn-link" onclick="limparFormulario('car')">Começar do zero</button>
+      </p>
+      <form id="form-car" autocomplete="off" onsubmit="return false">
+        <label class="rotulo" for="car-placa">Caminhão (placa)</label>
+        <select id="car-placa" name="placa" class="campo"></select>
+
+        <label class="rotulo" for="car-data">Data do carregamento</label>
+        <input id="car-data" name="data" class="campo" type="date">
+
+        <label class="rotulo" for="car-cidade-car">Cidade do carregamento</label>
+        <div class="auto">
+          <input id="car-cidade-car" name="cidadeCarregamento" class="campo" placeholder="Digite o nome da cidade" data-auto="municipios">
+          <div class="auto-lista oculto"></div>
+        </div>
+
+        <label class="rotulo" for="car-local-car">Local do carregamento</label>
+        <input id="car-local-car" name="localCarregamento" class="campo" placeholder="Armazém, fazenda, mineradora…">
+
+        <label class="rotulo" for="car-cidade-desc">Cidade do descarregamento</label>
+        <div class="auto">
+          <input id="car-cidade-desc" name="cidadeDescarga" class="campo" placeholder="Digite o nome da cidade" data-auto="municipios">
+          <div class="auto-lista oculto"></div>
+        </div>
+
+        <label class="rotulo" for="car-local-desc">Local do descarregamento</label>
+        <input id="car-local-desc" name="localDescarga" class="campo" placeholder="Porto, fábrica, armazém…">
+
+        <label class="rotulo" for="car-km">Km do caminhão (hodômetro)</label>
+        <input id="car-km" name="km" class="campo" inputmode="numeric" placeholder="Ex.: 123456">
+        <p id="car-km-aviso" class="aviso oculto"></p>
+
+        <div class="foto" data-foto="fotoHodometro">
+          <span class="rotulo">Foto do hodômetro <b class="obrigatorio">(obrigatória)</b></span>
+          <label class="btn btn-foto"><span class="btn-foto-texto">📷 Tirar foto do hodômetro</span>
+            <input type="file" accept="image/*" capture="environment" class="oculto">
+          </label>
+          <img class="foto-previa oculto" alt="Foto do hodômetro">
+        </div>
+
+        <label class="rotulo" for="car-peso">Peso da carga (toneladas)</label>
+        <input id="car-peso" name="peso" class="campo" inputmode="decimal" placeholder="Ex.: 37,45">
+
+        <label class="rotulo" for="car-valor">Valor por tonelada (R$)</label>
+        <input id="car-valor" name="valorTon" class="campo" inputmode="decimal" placeholder="Ex.: 150,00">
+
+        <div class="calculado">Frete estimado: <b id="car-frete">R$ 0,00</b></div>
+
+        <label class="rotulo" for="car-cliente">Cliente (nome que está no CT-e)</label>
+        <div class="auto">
+          <input id="car-cliente" name="cliente" class="campo" placeholder="Digite para buscar" data-auto="clientes">
+          <div class="auto-lista oculto"></div>
+        </div>
+        <div id="car-cliente-outro-bloco" class="oculto">
+          <label class="rotulo" for="car-cliente-outro">Escreva o nome do cliente</label>
+          <input id="car-cliente-outro" name="clienteOutroNome" class="campo" placeholder="Como está no CT-e">
+        </div>
+
+        <div class="foto" data-foto="fotoTicket">
+          <span class="rotulo">Foto do ticket / ordem de carregamento (opcional)</span>
+          <label class="btn btn-foto btn-foto-secundario"><span class="btn-foto-texto">📷 Tirar foto do ticket</span>
+            <input type="file" accept="image/*" capture="environment" class="oculto">
+          </label>
+          <img class="foto-previa oculto" alt="Foto do ticket">
+        </div>
+
+        <label class="rotulo" for="car-obs">Observação (opcional)</label>
+        <textarea id="car-obs" name="obs" class="campo" rows="3"></textarea>
+
+        <p class="erro oculto" data-erros></p>
+        <button type="button" class="btn btn-principal" onclick="enviarCarregamento()">Enviar carregamento</button>
+        <button type="button" class="btn btn-voltar" onclick="mostrarTela('inicio')">Voltar</button>
+      </form>
+    </section>
+
+    <!-- DESCARGA: escolher viagem -->
+    <section id="tela-descarga-escolher" class="tela oculto">
+      <h1>Descarga</h1>
+      <label class="rotulo" for="desc-placa">Caminhão (placa)</label>
+      <select id="desc-placa" class="campo" onchange="buscarViagensAbertas()"></select>
+      <p class="rotulo">Qual viagem você está descarregando?</p>
+      <div id="desc-lista"></div>
+      <button type="button" class="btn btn-voltar" onclick="mostrarTela('inicio')">Voltar</button>
+    </section>
+
+    <!-- DESCARGA: formulário -->
+    <section id="tela-descarga" class="tela oculto">
+      <h1>Descarga</h1>
+      <div id="desc-viagem" class="cartao"></div>
+      <p id="desc-rascunho" class="faixa faixa-info oculto">
+        Continuando o que você começou antes.
+        <button type="button" class="btn-link" onclick="limparFormulario('desc')">Começar do zero</button>
+      </p>
+      <form id="form-desc" autocomplete="off" onsubmit="return false">
+        <label class="rotulo" for="desc-data">Data da descarga</label>
+        <input id="desc-data" name="data" class="campo" type="date">
+
+        <label class="rotulo" for="desc-peso">Peso descarregado (toneladas)</label>
+        <input id="desc-peso" name="peso" class="campo" inputmode="decimal" placeholder="Ex.: 37,30">
+        <div class="calculado" id="desc-quebra">Quebra: —</div>
+
+        <label class="rotulo" for="desc-km">Km do caminhão (hodômetro)</label>
+        <input id="desc-km" name="km" class="campo" inputmode="numeric" placeholder="Ex.: 124900">
+        <p id="desc-km-aviso" class="aviso oculto"></p>
+
+        <div class="foto" data-foto="fotoHodometro">
+          <span class="rotulo">Foto do hodômetro <b class="obrigatorio">(obrigatória)</b></span>
+          <label class="btn btn-foto"><span class="btn-foto-texto">📷 Tirar foto do hodômetro</span>
+            <input type="file" accept="image/*" capture="environment" class="oculto">
+          </label>
+          <img class="foto-previa oculto" alt="Foto do hodômetro">
+        </div>
+
+        <div class="foto" data-foto="fotoTicket">
+          <span class="rotulo">Foto do ticket de descarga (opcional)</span>
+          <label class="btn btn-foto btn-foto-secundario"><span class="btn-foto-texto">📷 Tirar foto do ticket</span>
+            <input type="file" accept="image/*" capture="environment" class="oculto">
+          </label>
+          <img class="foto-previa oculto" alt="Foto do ticket">
+        </div>
+
+        <label class="rotulo" for="desc-obs">Observação (opcional)</label>
+        <textarea id="desc-obs" name="obs" class="campo" rows="3"></textarea>
+
+        <p class="erro oculto" data-erros></p>
+        <button type="button" class="btn btn-principal" onclick="enviarDescarga()">Enviar descarga</button>
+        <button type="button" class="btn btn-voltar" onclick="abrirDescarga()">Voltar</button>
+      </form>
+    </section>
+
+    <!-- ENVIANDO -->
+    <section id="tela-enviando" class="tela oculto">
+      <p class="centro grande">Enviando…</p>
+      <p class="centro">Não feche o aplicativo.</p>
+    </section>
+
+    <!-- CONFIRMAÇÃO -->
+    <section id="tela-ok" class="tela oculto">
+      <p class="centro grande ok">✅ Registrado!</p>
+      <p class="centro">Código da viagem:</p>
+      <p id="ok-codigo" class="codigo"></p>
+      <pre id="ok-resumo" class="resumo"></pre>
+      <a id="ok-whatsapp" class="btn btn-whatsapp" target="_blank" rel="noopener">Enviar no WhatsApp</a>
+      <button type="button" class="btn btn-voltar" onclick="mostrarTela('inicio')">Voltar ao início</button>
+    </section>
+
+    <!-- FALHA DE ENVIO -->
+    <section id="tela-falha" class="tela oculto">
+      <p class="centro grande">📶 Não consegui enviar agora</p>
+      <p class="centro">O sinal pode estar fraco. <b>Seu registro ficou guardado neste celular</b> e não vai se perder.</p>
+      <p id="falha-detalhe" class="centro pequeno oculto"></p>
+      <button type="button" class="btn btn-principal" onclick="enviarPendentes()">Tentar enviar novamente</button>
+      <button type="button" class="btn btn-voltar" onclick="mostrarTela('inicio')">Voltar ao início</button>
+    </section>
+  </main>
+
+  <div id="mensagem" class="mensagem oculto" role="status"></div>
+
+  <script>window.API_URL = 'https://script.google.com/macros/s/AKfycbyH-VHoT9kYvrw4OeCJX0uxkMeWDe9NQ6ydN2goB2iQeb0QdDkOjzEycu3pCusMbmTy/exec';</script>
+<script>
+  /*
+   * App do motorista. Regra de ouro: nunca perder o que foi digitado.
+   *  - Cada formulário é salvo no celular a cada alteração (rascunho).
+   *  - Se o envio falhar, o registro vai para a fila "pendentes" e é
+   *    reenviado depois. Cada formulário tem um idEnvio fixo, então um
+   *    reenvio nunca duplica a viagem no servidor.
+   */
+
+  const OUTRO_CLIENTE = 'Outro (não está na lista)';
+  const TEMPO_LIMITE_MS = 120000;
+
+  const E = {
+    dados: null,
+    municipios: [],
+    municipiosBusca: [],
+    clientesBusca: [],
+    motorista: null,          // {nome, pin}
+    viagemDescarga: null,     // viagem escolhida na descarga
+    fotos: { car: {}, desc: {} },
+    idEnvio: { car: null, desc: null },
+    enviandoPendentes: false,
+  };
+
+  // ---------------------------------------------------------------- armazenamento local
+  const ls = {
+    get(chave, padrao) {
+      try { const v = localStorage.getItem('fr_' + chave); return v === null ? padrao : JSON.parse(v); }
+      catch (e) { return padrao; }
+    },
+    set(chave, valor) {
+      try { localStorage.setItem('fr_' + chave, JSON.stringify(valor)); return true; }
+      catch (e) { return false; }
+    },
+    del(chave) { try { localStorage.removeItem('fr_' + chave); } catch (e) { /* ignora */ } },
+  };
+
+  // ---------------------------------------------------------------- utilitários
+  const $ = (id) => document.getElementById(id);
+
+  /**
+   * Chama uma função do servidor. Na página externa (GitHub Pages) window.API_URL
+   * aponta para o /exec do Apps Script e a chamada vai por fetch, sem login Google
+   * (evita o erro das várias contas Google logadas). Dentro do Apps Script, usa google.script.run.
+   */
+  function chamar(funcao, ...args) {
+    if (window.API_URL) return chamarApi(funcao, args);
+    return new Promise((resolve, reject) => {
+      if (typeof google === 'undefined' || !google.script) {
+        reject(new Error('Servidor indisponível.'));
+        return;
+      }
+      let terminou = false;
+      const timer = setTimeout(() => {
+        if (terminou) return;
+        terminou = true;
+        reject(new Error('Tempo esgotado. O sinal pode estar fraco.'));
+      }, TEMPO_LIMITE_MS);
+      google.script.run
+        .withSuccessHandler((r) => { if (terminou) return; terminou = true; clearTimeout(timer); resolve(r); })
+        .withFailureHandler((e) => {
+          if (terminou) return;
+          terminou = true;
+          clearTimeout(timer);
+          reject(e instanceof Error ? e : new Error(String((e && e.message) || e)));
+        })[funcao](...args);
+    });
+  }
+
+  async function chamarApi(funcao, args) {
+    const controle = new AbortController();
+    const timer = setTimeout(() => controle.abort(), TEMPO_LIMITE_MS);
+    try {
+      const resp = await fetch(window.API_URL, {
+        method: 'POST',
+        // text/plain evita a checagem prévia (CORS) que o Apps Script não responde.
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ funcao: funcao, args: args }),
+        credentials: 'omit',
+        redirect: 'follow',
+        signal: controle.signal,
+      });
+      if (!resp.ok) throw new Error('Servidor respondeu ' + resp.status);
+      const r = await resp.json();
+      if (r.erroServidor) throw new Error(r.erroServidor);
+      return r.resultado;
+    } catch (e) {
+      throw e.name === 'AbortError' ? new Error('Tempo esgotado. O sinal pode estar fraco.') : e;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  function normalizar(s) {
+    return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().replace(/[-–]/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  /** "37,45" / "37.45" / "1.150,00" → número. Vazio ou inválido → NaN. */
+  function lerNumero(s) {
+    let t = String(s || '').trim().replace(/\s/g, '').replace(/^R\$/i, '');
+    if (!t) return NaN;
+    if (t.indexOf(',') >= 0) t = t.replace(/\./g, '').replace(',', '.');
+    return /^\d+(\.\d+)?$/.test(t) ? Number(t) : NaN;
+  }
+
+  /** Km: aceita "123.456" ou "123456". */
+  function lerKm(s) {
+    const t = String(s || '').replace(/[.\s]/g, '');
+    return /^\d+$/.test(t) ? Number(t) : NaN;
+  }
+
+  function fmtNum(n, casas) {
+    return Number(n).toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas });
+  }
+  function fmtMoeda(n) { return 'R$ ' + fmtNum(n, 2); }
+  function fmtKm(n) { return Number(n).toLocaleString('pt-BR'); }
+  function fmtDataISO(iso) { const p = String(iso || '').split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso; }
+
+  function hojeISO() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function novoIdEnvio() {
+    return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+  }
+
+  function escapar(s) {
+    return String(s === undefined || s === null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  let timerMensagem = null;
+  function mensagem(texto, ms) {
+    const el = $('mensagem');
+    el.textContent = texto;
+    el.classList.remove('oculto');
+    clearTimeout(timerMensagem);
+    timerMensagem = setTimeout(() => el.classList.add('oculto'), ms || 4000);
+  }
+
+  function mostrarTela(nome) {
+    document.querySelectorAll('.tela').forEach((t) => t.classList.add('oculto'));
+    $('tela-' + nome).classList.remove('oculto');
+    window.scrollTo(0, 0);
+    if (nome === 'inicio') {
+      atualizarFaixaPendentes();
+      carregarMinhasViagens();
+    }
+  }
+
+  function caminhao(placa) {
+    return ((E.dados && E.dados.caminhoes) || []).find((c) => c.placa === placa) || null;
+  }
+
+  function preencherPlacas(select, selecionada) {
+    select.innerHTML = E.dados.caminhoes.map((c) =>
+      '<option value="' + escapar(c.placa) + '">' + escapar((c.apelido ? c.apelido + ' – ' : '') + c.placa) + '</option>'
+    ).join('');
+    if (selecionada && caminhao(selecionada)) select.value = selecionada;
+  }
+
+  function placaPreferida() {
+    const ultima = ls.get('ultimaPlaca', '');
+    if (ultima && caminhao(ultima)) return ultima;
+    return E.dados.placaPadrao || '';
+  }
+
+  // ---------------------------------------------------------------- início
+  window.addEventListener('load', iniciar);
+  window.addEventListener('online', () => enviarPendentes(true));
+
+  function iniciar() {
+    ligarAutocompletes();
+    ligarFotos();
+    ligarFormularios();
+    E.motorista = ls.get('motorista', null);
+    atualizarFaixaPendentes();
+
+    // Caminhões e clientes só vêm do servidor com nome + PIN válidos.
+    const guardado = ls.get('dados', null);
+    const cred = E.motorista || {};
+    chamar('motoristaDadosIniciais', cred.nome || '', cred.pin || '')
+      .then((d) => {
+        E.dados = d;
+        if (d.autenticado) ls.set('dados', d);
+        else if (E.motorista) { ls.del('motorista'); E.motorista = null; }
+        $('faixa-offline').classList.add('oculto');
+        prosseguir();
+        carregarMunicipios(d.qtdMunicipios);
+        enviarPendentes(true);
+      })
+      .catch(() => {
+        if (guardado) {
+          E.dados = guardado;
+          $('faixa-offline').classList.remove('oculto');
+          prosseguir();
+          carregarMunicipios(null);
+        } else {
+          $('tela-carregando').innerHTML =
+            '<p class="centro grande">Sem conexão</p>' +
+            '<p class="centro">Na primeira vez o aplicativo precisa de internet. Procure um lugar com sinal e toque abaixo.</p>' +
+            '<button type="button" class="btn btn-principal" onclick="location.reload()">Tentar de novo</button>';
+        }
+      });
+  }
+
+  function prosseguir() {
+    E.clientesBusca = (E.dados.clientes || []).map(normalizar);
+    $('entrar-nome').innerHTML = '<option value="">Escolha seu nome…</option>' +
+      E.dados.motoristas.map((m) =>
+        '<option value="' + escapar(m.nome) + '">' + escapar(m.nome + (m.apelido ? ' (' + m.apelido + ')' : '')) + '</option>'
+      ).join('');
+
+    if (E.motorista && E.dados.autenticado && E.dados.motoristas.some((m) => m.nome === E.motorista.nome)) {
+      mostrarMotoristaNoTopo();
+      mostrarTela('inicio');
+    } else {
+      E.motorista = null;
+      mostrarTela('entrar');
+    }
+  }
+
+  function carregarMunicipios(qtdServidor) {
+    const cache = ls.get('municipios', null);
+    if (cache && cache.lista && cache.lista.length && (qtdServidor === null || cache.qtd === qtdServidor)) {
+      definirMunicipios(cache.lista);
+      return;
+    }
+    if (qtdServidor === null) return;
+    chamar('motoristaMunicipios')
+      .then((lista) => {
+        definirMunicipios(lista);
+        ls.set('municipios', { qtd: lista.length, lista: lista });
+      })
+      .catch(() => { if (cache && cache.lista) definirMunicipios(cache.lista); });
+  }
+
+  function definirMunicipios(lista) {
+    E.municipios = lista;
+    E.municipiosBusca = lista.map(normalizar);
+  }
+
+  // ---------------------------------------------------------------- entrar / sair
+  function entrar() {
+    const nome = $('entrar-nome').value;
+    const pin = $('entrar-pin').value.trim();
+    const erro = $('entrar-erro');
+    erro.classList.add('oculto');
+    if (!nome) { erro.textContent = 'Escolha seu nome na lista.'; erro.classList.remove('oculto'); return; }
+    if (!/^\d{4}$/.test(pin)) { erro.textContent = 'O PIN tem 4 números.'; erro.classList.remove('oculto'); return; }
+
+    chamar('motoristaEntrar', nome, pin)
+      .then((r) => {
+        if (!r.ok) { erro.textContent = r.erro; erro.classList.remove('oculto'); return; }
+        E.motorista = { nome: r.nome, pin: pin };
+        ls.set('motorista', E.motorista);
+        E.dados = r.dados;
+        E.clientesBusca = (E.dados.clientes || []).map(normalizar);
+        ls.set('dados', E.dados);
+        $('entrar-pin').value = '';
+        mostrarMotoristaNoTopo();
+        mostrarTela('inicio');
+      })
+      .catch(() => {
+        erro.textContent = 'Sem sinal agora. Para entrar é preciso internet. Tente de novo em um lugar com sinal.';
+        erro.classList.remove('oculto');
+      });
+  }
+
+  function sair() {
+    ls.del('motorista');
+    E.motorista = null;
+    $('topo-motorista').textContent = '';
+    mostrarTela('entrar');
+  }
+
+  function mostrarMotoristaNoTopo() {
+    const m = E.dados.motoristas.find((x) => x.nome === E.motorista.nome);
+    const primeiro = E.motorista.nome.split(' ')[0];
+    $('topo-motorista').textContent = m && m.apelido ? primeiro + ' (' + m.apelido + ')' : primeiro;
+  }
+
+  function pinRecusado(texto) {
+    ls.del('motorista');
+    E.motorista = null;
+    mostrarTela('entrar');
+    $('entrar-erro').textContent = (texto || 'PIN incorreto.') + ' Entre de novo — o que você digitou está guardado.';
+    $('entrar-erro').classList.remove('oculto');
+  }
+
+  // ---------------------------------------------------------------- minhas viagens
+  function carregarMinhasViagens() {
+    if (!E.motorista) return;
+    const chave = 'minhas_' + E.motorista.nome;
+    const guardadas = ls.get(chave, null);
+    if (guardadas) desenharMinhasViagens(guardadas, false);
+    else $('minhas-lista').innerHTML = '<p class="centro pequeno">Buscando suas viagens…</p>';
+
+    chamar('motoristaMinhasViagens', E.motorista.nome, E.motorista.pin)
+      .then((r) => {
+        if (!r.ok) { if (r.pin) pinRecusado(r.erro); return; }
+        ls.set(chave, r.viagens);
+        desenharMinhasViagens(r.viagens, false);
+      })
+      .catch(() => {
+        if (guardadas) desenharMinhasViagens(guardadas, true);
+        else $('minhas-lista').innerHTML = '<p class="centro pequeno">Sem sinal para buscar suas viagens agora.</p>';
+      });
+  }
+
+  function etiquetaStatus(status) {
+    if (status === 'Carregado') return '<span class="etiqueta etiqueta-aberta">Falta a descarga</span>';
+    if (status === 'Cancelado') return '<span class="etiqueta etiqueta-cancelada">Cancelada</span>';
+    return '<span class="etiqueta etiqueta-ok">Descarregada</span>';
+  }
+
+  function desenharMinhasViagens(viagens, offline) {
+    const pendentes = ls.get('pendentes', []).filter((p) => p.payload.motorista === E.motorista.nome);
+    const descargasNaFila = pendentes.filter((p) => p.tipo === 'descarga').map((p) => p.payload.codigo);
+    let html = offline ? '<p class="aviso">Sem sinal: mostrando a última lista guardada no celular.</p>' : '';
+
+    // Registros que ainda não chegaram ao servidor.
+    pendentes.forEach((p) => {
+      const d = p.payload;
+      html += p.tipo === 'carregamento'
+        ? '<div class="cartao"><b>Carregamento ' + escapar(fmtDataISO(d.data)) + '</b><span class="etiqueta etiqueta-fila">Aguardando envio</span>' +
+          '<div class="linha">' + escapar(d.placa) + ' · ' + escapar(d.cidadeCarregamento) + ' → ' + escapar(d.cidadeDescarga) + '</div></div>'
+        : '<div class="cartao"><b>' + escapar(d.codigo) + '</b><span class="etiqueta etiqueta-fila">Descarga aguardando envio</span></div>';
+    });
+
+    E.minhasViagens = viagens;
+    viagens.forEach((v, i) => {
+      const podeDescarregar = v.status === 'Carregado' && descargasNaFila.indexOf(v.codigo) < 0;
+      let quebra = '';
+      if (v.quebraKg !== null && v.pesoDescarga) {
+        quebra = v.quebraKg >= 0
+          ? ' · Quebra ' + fmtKm(v.quebraKg) + ' kg (' + fmtNum(v.quebraPct, 2) + '%)'
+          : ' · Sobra ' + fmtKm(-v.quebraKg) + ' kg';
+      }
+      html += '<div class="cartao' + (podeDescarregar ? ' cartao-viagem" onclick="descarregarMinhaViagem(' + i + ')' : '') + '">' +
+        '<b>' + escapar(v.codigo) + '</b>' + (descargasNaFila.indexOf(v.codigo) >= 0 ? '' : etiquetaStatus(v.status)) +
+        '<div class="linha">' + escapar(v.data) + ' · ' + escapar(v.origem) + ' → ' + escapar(v.destino) + '</div>' +
+        '<div class="linha">' + escapar(v.cliente) + ' · ' + fmtNum(v.peso, 3) + ' t' +
+        (v.pesoDescarga ? ' → ' + fmtNum(v.pesoDescarga, 3) + ' t' : '') + quebra + '</div>' +
+        (v.dataDescarga ? '<div class="linha">Descarregou em ' + escapar(v.dataDescarga) + '</div>' : '') +
+        (podeDescarregar ? '<div class="cartao-acao">Toque aqui para registrar a descarga ›</div>' : '') +
+        '</div>';
+    });
+
+    $('minhas-lista').innerHTML = html ||
+      '<div class="cartao">Nenhuma viagem registrada ainda. Toque em <b>CARREGAMENTO</b> para começar.</div>';
+  }
+
+  function descarregarMinhaViagem(i) {
+    const v = E.minhasViagens[i];
+    if (caminhao(v.placa)) ls.set('ultimaPlaca', v.placa);
+    E.viagensMostradas = [v];
+    escolherViagem(0);
+  }
+
+  // ---------------------------------------------------------------- autocompletar
+  function ligarAutocompletes() {
+    document.querySelectorAll('input[data-auto]').forEach((inp) => {
+      const lista = inp.parentElement.querySelector('.auto-lista');
+      inp.addEventListener('input', () => {
+        inp.dataset.ok = '';
+        if (inp.id === 'car-cliente') mostrarClienteOutro(false);
+        mostrarSugestoes(inp, lista);
+      });
+      inp.addEventListener('focus', () => { if (!inp.dataset.ok) mostrarSugestoes(inp, lista); });
+      inp.addEventListener('blur', () => setTimeout(() => lista.classList.add('oculto'), 250));
+    });
+  }
+
+  function mostrarSugestoes(inp, lista) {
+    const ehCliente = inp.dataset.auto === 'clientes';
+    const q = normalizar(inp.value);
+    if (!ehCliente && q.length < 2) { lista.classList.add('oculto'); return; }
+
+    const itens = ehCliente
+      ? filtrar(E.dados ? E.dados.clientes : [], E.clientesBusca, q, 8)
+      : filtrar(E.municipios, E.municipiosBusca, q, 8);
+    if (ehCliente) itens.push(OUTRO_CLIENTE);
+
+    if (!itens.length) {
+      lista.innerHTML = '<div class="auto-vazio">' +
+        (E.municipios.length ? 'Nenhuma cidade encontrada. Confira a escrita.' : 'Lista de cidades ainda não carregada. Precisa de sinal.') +
+        '</div>';
+    } else {
+      lista.innerHTML = itens.map((t) =>
+        '<div class="auto-item' + (t === OUTRO_CLIENTE ? ' outro' : '') + '" data-valor="' + escapar(t) + '">' + escapar(t) + '</div>'
+      ).join('');
+    }
+    lista.classList.remove('oculto');
+
+    lista.querySelectorAll('.auto-item').forEach((el) => {
+      el.addEventListener('mousedown', (ev) => ev.preventDefault()); // não perder o foco antes do clique
+      el.addEventListener('click', () => {
+        const valor = el.dataset.valor;
+        inp.value = valor;
+        inp.dataset.ok = valor === OUTRO_CLIENTE ? 'outro' : '1';
+        inp.classList.remove('invalido');
+        lista.classList.add('oculto');
+        if (inp.id === 'car-cliente') {
+          mostrarClienteOutro(valor === OUTRO_CLIENTE);
+          if (valor === OUTRO_CLIENTE) $('car-cliente-outro').focus();
+        }
+        inp.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    });
+  }
+
+  /** Começa com o texto digitado primeiro, depois contém. */
+  function filtrar(lista, busca, q, max) {
+    if (!q) return lista.slice(0, max);
+    const comeca = [], contem = [];
+    for (let i = 0; i < busca.length && comeca.length < max; i++) {
+      const pos = busca[i].indexOf(q);
+      if (pos === 0) comeca.push(lista[i]);
+      else if (pos > 0 && contem.length < max) contem.push(lista[i]);
+    }
+    return comeca.concat(contem).slice(0, max);
+  }
+
+  function mostrarClienteOutro(mostrar) {
+    $('car-cliente-outro-bloco').classList.toggle('oculto', !mostrar);
+  }
+
+  /** Marca o campo como válido se o texto bate exatamente com um item da lista. */
+  function revalidarAuto(inp) {
+    if (inp.dataset.auto === 'clientes') {
+      inp.dataset.ok = inp.value === OUTRO_CLIENTE ? 'outro' : (E.dados.clientes.indexOf(inp.value) >= 0 ? '1' : '');
+      if (inp.id === 'car-cliente') mostrarClienteOutro(inp.dataset.ok === 'outro');
+    } else {
+      inp.dataset.ok = E.municipios.indexOf(inp.value) >= 0 ? '1' : '';
+    }
+  }
+
+  // ---------------------------------------------------------------- fotos
+  function ligarFotos() {
+    document.querySelectorAll('.foto').forEach((div) => {
+      const input = div.querySelector('input[type=file]');
+      input.addEventListener('change', async () => {
+        const arquivo = input.files && input.files[0];
+        if (!arquivo) return;
+        const form = div.closest('form').id === 'form-car' ? 'car' : 'desc';
+        mensagem('Preparando a foto…', 8000);
+        try {
+          const dataUrl = await comprimirFoto(arquivo);
+          E.fotos[form][div.dataset.foto] = dataUrl;
+          mostrarPrevia(div, dataUrl);
+          salvarRascunho(form);
+          mensagem('Foto pronta ✅', 2000);
+        } catch (e) {
+          mensagem(e.message);
+        }
+        input.value = '';
+      });
+    });
+  }
+
+  /** Reduz para no máximo 1280 px no lado maior e JPEG qualidade 0,7. */
+  function comprimirFoto(arquivo) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(arquivo);
+      const img = new Image();
+      img.onload = () => {
+        const escala = Math.min(1, 1280 / Math.max(img.naturalWidth, img.naturalHeight));
+        const w = Math.round(img.naturalWidth * escala), h = Math.round(img.naturalHeight * escala);
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Não consegui abrir a foto. Tente tirar de novo.')); };
+      img.src = url;
+    });
+  }
+
+  function mostrarPrevia(div, dataUrl) {
+    const img = div.querySelector('.foto-previa');
+    const botao = div.querySelector('.btn-foto');
+    const texto = div.querySelector('.btn-foto-texto');
+    if (!texto.dataset.original) texto.dataset.original = texto.textContent;
+    if (dataUrl) {
+      img.src = dataUrl;
+      img.classList.remove('oculto');
+      botao.classList.add('tem-foto');
+      texto.textContent = '✅ Foto pronta (toque para tirar outra)';
+    } else {
+      img.removeAttribute('src');
+      img.classList.add('oculto');
+      botao.classList.remove('tem-foto', 'invalido');
+      texto.textContent = texto.dataset.original;
+    }
+  }
+
+  // ---------------------------------------------------------------- rascunhos
+  let timerRascunho = {};
+  function ligarFormularios() {
+    ['car', 'desc'].forEach((form) => {
+      const f = $('form-' + form);
+      const salvar = () => { clearTimeout(timerRascunho[form]); timerRascunho[form] = setTimeout(() => salvarRascunho(form), 400); };
+      f.addEventListener('input', salvar);
+      f.addEventListener('change', salvar);
+    });
+    ['car-peso', 'car-valor'].forEach((id) => $(id).addEventListener('input', calcularFrete));
+    $('car-km').addEventListener('input', avisarKmCarregamento);
+    $('car-placa').addEventListener('change', avisarKmCarregamento);
+    $('desc-peso').addEventListener('input', calcularQuebra);
+    $('desc-km').addEventListener('input', avisarKmDescarga);
+  }
+
+  function coletar(form) {
+    const o = {};
+    $('form-' + form).querySelectorAll('[name]').forEach((el) => { o[el.name] = el.value; });
+    return o;
+  }
+
+  function salvarRascunho(form) {
+    const r = { campos: coletar(form), fotos: E.fotos[form], idEnvio: E.idEnvio[form] };
+    if (form === 'desc') r.viagem = E.viagemDescarga;
+    if (!ls.set('rasc_' + form, r)) {
+      r.fotos = {}; // memória do celular cheia: guarda pelo menos os textos
+      ls.set('rasc_' + form, r);
+    }
+  }
+
+  function aplicarRascunho(form, r) {
+    const f = $('form-' + form);
+    Object.keys(r.campos || {}).forEach((nome) => {
+      const el = f.querySelector('[name="' + nome + '"]');
+      if (el) el.value = r.campos[nome];
+    });
+    f.querySelectorAll('input[data-auto]').forEach(revalidarAuto);
+    E.fotos[form] = r.fotos || {};
+    f.querySelectorAll('.foto').forEach((div) => mostrarPrevia(div, E.fotos[form][div.dataset.foto] || null));
+    E.idEnvio[form] = r.idEnvio || novoIdEnvio();
+  }
+
+  function rascunhoTemConteudo(r) {
+    if (!r || !r.campos) return false;
+    const ignorar = { placa: 1, data: 1 };
+    return Object.keys(r.campos).some((k) => !ignorar[k] && String(r.campos[k]).trim()) ||
+      Object.keys(r.fotos || {}).length > 0;
+  }
+
+  function limparFormulario(form) {
+    ls.del('rasc_' + form);
+    const f = $('form-' + form);
+    f.reset();
+    f.querySelectorAll('.invalido').forEach((el) => el.classList.remove('invalido'));
+    f.querySelectorAll('input[data-auto]').forEach((el) => { el.dataset.ok = ''; });
+    f.querySelector('[data-erros]').classList.add('oculto');
+    E.fotos[form] = {};
+    f.querySelectorAll('.foto').forEach((div) => mostrarPrevia(div, null));
+    E.idEnvio[form] = novoIdEnvio();
+    $(form + '-rascunho').classList.add('oculto');
+    if (form === 'car') {
+      mostrarClienteOutro(false);
+      $('car-data').value = hojeISO();
+      $('car-placa').value = placaPreferida() || $('car-placa').value;
+      $('car-km-aviso').classList.add('oculto');
+      calcularFrete();
+    } else {
+      $('desc-data').value = hojeISO();
+      $('desc-km-aviso').classList.add('oculto');
+      calcularQuebra();
+    }
+  }
+
+  // ---------------------------------------------------------------- carregamento
+  function abrirCarregamento() {
+    preencherPlacas($('car-placa'), placaPreferida());
+    const r = ls.get('rasc_car', null);
+    if (rascunhoTemConteudo(r)) {
+      aplicarRascunho('car', r);
+      $('car-rascunho').classList.remove('oculto');
+    } else {
+      limparFormulario('car');
+    }
+    calcularFrete();
+    avisarKmCarregamento();
+    mostrarTela('carregamento');
+  }
+
+  function calcularFrete() {
+    const peso = lerNumero($('car-peso').value), valor = lerNumero($('car-valor').value);
+    $('car-frete').textContent = peso > 0 && valor > 0 ? fmtMoeda(peso * valor) : 'R$ 0,00';
+  }
+
+  function avisarKmCarregamento() {
+    const km = lerKm($('car-km').value);
+    const c = caminhao($('car-placa').value);
+    const aviso = $('car-km-aviso');
+    if (km > 0 && c && c.ultimoKm && km < c.ultimoKm) {
+      aviso.textContent = '⚠️ O último km registrado deste caminhão foi ' + fmtKm(c.ultimoKm) + '. Confira se digitou certo.';
+      aviso.classList.remove('oculto');
+    } else {
+      aviso.classList.add('oculto');
+    }
+  }
+
+  function enviarCarregamento() {
+    const c = coletar('car');
+    const f = $('form-car');
+    const erros = [];
+    f.querySelectorAll('.invalido').forEach((el) => el.classList.remove('invalido'));
+    const erro = (id, texto) => { erros.push(texto); if (id) $(id).classList.add('invalido'); };
+    const cidadeOk = (id) => !E.municipios.length ? !!$(id).value.trim() : $(id).dataset.ok === '1';
+
+    const km = lerKm(c.km), peso = lerNumero(c.peso), valorTon = lerNumero(c.valorTon);
+    const clienteInp = $('car-cliente');
+    const ehOutro = clienteInp.dataset.ok === 'outro';
+
+    if (!c.placa) erro('car-placa', 'Escolha o caminhão.');
+    if (!c.data) erro('car-data', 'Informe a data do carregamento.');
+    else if (c.data > hojeISO()) erro('car-data', 'A data do carregamento não pode ser no futuro.');
+    if (!cidadeOk('car-cidade-car')) erro('car-cidade-car', 'Escolha a cidade do carregamento na lista.');
+    if (!cidadeOk('car-cidade-desc')) erro('car-cidade-desc', 'Escolha a cidade do descarregamento na lista.');
+    if (!(km > 0)) erro('car-km', 'Digite o km do hodômetro (só números).');
+    if (!E.fotos.car.fotoHodometro) {
+      erro(null, 'Tire a foto do hodômetro.');
+      f.querySelector('[data-foto="fotoHodometro"] .btn-foto').classList.add('invalido');
+    }
+    if (!(peso > 0)) erro('car-peso', 'Digite o peso da carga em toneladas (ex.: 37,45).');
+    else if (peso > E.dados.pesoMax && peso >= 1000) erro('car-peso', 'O peso parece estar em quilos. Digite em toneladas: ex. 37,45.');
+    else if (peso < E.dados.pesoMin || peso > E.dados.pesoMax) erro('car-peso', 'O peso precisa estar entre ' + E.dados.pesoMin + ' e ' + E.dados.pesoMax + ' toneladas.');
+    if (!(valorTon > 0)) erro('car-valor', 'Digite o valor por tonelada (ex.: 150,00).');
+    if (!clienteInp.dataset.ok) erro('car-cliente', 'Escolha o cliente na lista (ou "Outro").');
+    if (ehOutro && !c.clienteOutroNome.trim()) erro('car-cliente-outro', 'Escreva o nome do cliente.');
+
+    if (mostrarErros(f, erros)) return;
+
+    const payload = {
+      idEnvio: E.idEnvio.car,
+      motorista: E.motorista.nome,
+      pin: E.motorista.pin,
+      placa: c.placa,
+      data: c.data,
+      cidadeCarregamento: c.cidadeCarregamento,
+      localCarregamento: c.localCarregamento,
+      cidadeDescarga: c.cidadeDescarga,
+      localDescarga: c.localDescarga,
+      km: km,
+      peso: peso,
+      valorTon: valorTon,
+      cliente: ehOutro ? c.clienteOutroNome.trim() : c.cliente,
+      clienteOutro: ehOutro,
+      obs: c.obs,
+      fotoHodometro: E.fotos.car.fotoHodometro,
+      fotoTicket: E.fotos.car.fotoTicket || null,
+    };
+    ls.set('ultimaPlaca', c.placa);
+    enviar({ tipo: 'carregamento', payload: payload, rascunho: { campos: c, idEnvio: E.idEnvio.car } });
+  }
+
+  function mostrarErros(form, erros) {
+    const caixa = form.querySelector('[data-erros]');
+    if (!erros.length) { caixa.classList.add('oculto'); return false; }
+    caixa.textContent = 'Falta arrumar:\n• ' + erros.join('\n• ');
+    caixa.classList.remove('oculto');
+    const primeiro = form.querySelector('.invalido');
+    (primeiro || caixa).scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return true;
+  }
+
+  // ---------------------------------------------------------------- descarga
+  function abrirDescarga() {
+    preencherPlacas($('desc-placa'), placaPreferida());
+    mostrarTela('descarga-escolher');
+    buscarViagensAbertas();
+  }
+
+  function buscarViagensAbertas() {
+    const placa = $('desc-placa').value;
+    const lista = $('desc-lista');
+    lista.innerHTML = '<p class="centro">Buscando viagens…</p>';
+    chamar('motoristaViagensAbertas', E.motorista.nome, E.motorista.pin, placa)
+      .then((r) => {
+        if (!r.ok) { if (r.pin) pinRecusado(r.erro); else lista.innerHTML = '<p class="erro">' + escapar(r.erro) + '</p>'; return; }
+        ls.set('viagens_' + placa, r.viagens);
+        desenharViagens(r.viagens, false);
+      })
+      .catch(() => {
+        const guardadas = ls.get('viagens_' + placa, null);
+        if (guardadas) desenharViagens(guardadas, true);
+        else lista.innerHTML = '<p class="erro">Sem sinal para buscar as viagens. Tente de novo quando tiver sinal.</p>' +
+          '<button type="button" class="btn btn-principal" onclick="buscarViagensAbertas()">Tentar de novo</button>';
+      });
+  }
+
+  function desenharViagens(viagens, offline) {
+    const jaNaFila = ls.get('pendentes', []).filter((p) => p.tipo === 'descarga').map((p) => p.payload.codigo);
+    const abertas = viagens.filter((v) => jaNaFila.indexOf(v.codigo) < 0);
+    const lista = $('desc-lista');
+    E.viagensMostradas = abertas;
+    if (!abertas.length) {
+      lista.innerHTML = '<div class="cartao">Nenhuma viagem carregada em aberto para este caminhão.</div>';
+      return;
+    }
+    lista.innerHTML = (offline ? '<p class="aviso">Sem sinal: mostrando a última lista guardada no celular.</p>' : '') +
+      abertas.map((v, i) =>
+        '<div class="cartao cartao-viagem" onclick="escolherViagem(' + i + ')">' +
+        '<b>' + escapar(v.codigo) + '</b>' +
+        '<div class="linha">' + escapar(v.data) + ' · ' + escapar(v.origem) + ' → ' + escapar(v.destino) + '</div>' +
+        '<div class="linha">' + escapar(v.cliente) + ' · ' + fmtNum(v.peso, 3) + ' t</div>' +
+        '</div>'
+      ).join('');
+  }
+
+  function escolherViagem(i) {
+    const v = E.viagensMostradas[i];
+    E.viagemDescarga = v;
+    $('desc-viagem').innerHTML = '<b>' + escapar(v.codigo) + '</b>' +
+      '<div class="linha">Carregou em ' + escapar(v.data) + ' · ' + escapar(v.origem) + ' → ' + escapar(v.destino) + '</div>' +
+      '<div class="linha">Peso carregado: ' + fmtNum(v.peso, 3) + ' t · Km: ' + fmtKm(v.km) + '</div>';
+
+    const r = ls.get('rasc_desc', null);
+    if (r && r.viagem && r.viagem.codigo === v.codigo && rascunhoTemConteudo(r)) {
+      aplicarRascunho('desc', r);
+      $('desc-rascunho').classList.remove('oculto');
+    } else {
+      limparFormulario('desc');
+    }
+    calcularQuebra();
+    avisarKmDescarga();
+    mostrarTela('descarga');
+  }
+
+  function calcularQuebra() {
+    const caixa = $('desc-quebra');
+    const v = E.viagemDescarga;
+    const peso = lerNumero($('desc-peso').value);
+    caixa.classList.remove('alerta');
+    if (!v || !(peso > 0)) { caixa.textContent = 'Quebra: —'; return; }
+    const kg = Math.round((v.peso - peso) * 1000);
+    const pct = v.peso ? (v.peso - peso) / v.peso * 100 : 0;
+    if (kg >= 0) {
+      caixa.textContent = 'Quebra: ' + fmtKm(kg) + ' kg (' + fmtNum(pct, 2) + '%)';
+    } else {
+      caixa.textContent = 'Sobra de peso: ' + fmtKm(-kg) + ' kg (' + fmtNum(-pct, 2) + '%)';
+    }
+    if (Math.abs(pct) > 1) caixa.classList.add('alerta');
+  }
+
+  function avisarKmDescarga() {
+    const km = lerKm($('desc-km').value);
+    const v = E.viagemDescarga;
+    const aviso = $('desc-km-aviso');
+    if (km > 0 && v && v.km && km <= v.km) {
+      aviso.textContent = '⚠️ No carregamento o km era ' + fmtKm(v.km) + '. Confira se digitou certo.';
+      aviso.classList.remove('oculto');
+    } else {
+      aviso.classList.add('oculto');
+    }
+  }
+
+  function enviarDescarga() {
+    const c = coletar('desc');
+    const f = $('form-desc');
+    const v = E.viagemDescarga;
+    const erros = [];
+    f.querySelectorAll('.invalido').forEach((el) => el.classList.remove('invalido'));
+    const erro = (id, texto) => { erros.push(texto); if (id) $(id).classList.add('invalido'); };
+    const km = lerKm(c.km), peso = lerNumero(c.peso);
+
+    if (!c.data) erro('desc-data', 'Informe a data da descarga.');
+    else if (c.data > hojeISO()) erro('desc-data', 'A data da descarga não pode ser no futuro.');
+    else if (v.dataISO && c.data < v.dataISO) erro('desc-data', 'A data da descarga não pode ser antes do carregamento (' + v.data + ').');
+    if (!(peso > 0)) erro('desc-peso', 'Digite o peso descarregado em toneladas (ex.: 37,30).');
+    else if (peso > E.dados.pesoMax && peso >= 1000) erro('desc-peso', 'O peso parece estar em quilos. Digite em toneladas: ex. 37,30.');
+    else if (peso < E.dados.pesoMin || peso > E.dados.pesoMax) erro('desc-peso', 'O peso precisa estar entre ' + E.dados.pesoMin + ' e ' + E.dados.pesoMax + ' toneladas.');
+    if (!(km > 0)) erro('desc-km', 'Digite o km do hodômetro (só números).');
+    if (!E.fotos.desc.fotoHodometro) {
+      erro(null, 'Tire a foto do hodômetro.');
+      f.querySelector('[data-foto="fotoHodometro"] .btn-foto').classList.add('invalido');
+    }
+    if (mostrarErros(f, erros)) return;
+
+    const payload = {
+      idEnvio: E.idEnvio.desc,
+      motorista: E.motorista.nome,
+      pin: E.motorista.pin,
+      codigo: v.codigo,
+      data: c.data,
+      peso: peso,
+      km: km,
+      obs: c.obs,
+      fotoHodometro: E.fotos.desc.fotoHodometro,
+      fotoTicket: E.fotos.desc.fotoTicket || null,
+    };
+    enviar({ tipo: 'descarga', payload: payload, viagem: v, rascunho: { campos: c, idEnvio: E.idEnvio.desc, viagem: v } });
+  }
+
+  // ---------------------------------------------------------------- envio e fila de pendentes
+  function funcaoDo(item) {
+    return item.tipo === 'carregamento' ? 'motoristaRegistrarCarregamento' : 'motoristaRegistrarDescarga';
+  }
+  function formDo(item) { return item.tipo === 'carregamento' ? 'car' : 'desc'; }
+
+  async function enviar(item) {
+    const form = formDo(item);
+    mostrarTela('enviando');
+    let r;
+    try {
+      r = await chamar(funcaoDo(item), item.payload);
+    } catch (e) {
+      if (guardarPendente(item)) {
+        limparFormulario(form);
+        $('falha-detalhe').textContent = 'Detalhe: ' + e.message;
+        mostrarTela('falha');
+      } else {
+        mostrarTela(form === 'car' ? 'carregamento' : 'descarga');
+        mensagem('Não consegui enviar e a memória do celular está cheia. NÃO feche o aplicativo e tente enviar de novo.', 10000);
+      }
+      return;
+    }
+    if (!r.ok) {
+      if (r.pin) { pinRecusado(r.erro); return; }
+      mostrarTela(form === 'car' ? 'carregamento' : 'descarga');
+      mostrarErros($('form-' + form), [r.erro]);
+      return;
+    }
+    limparFormulario(form);
+    mostrarConfirmacao(item, r);
+  }
+
+  function guardarPendente(item) {
+    const lista = ls.get('pendentes', []).filter((p) => p.payload.idEnvio !== item.payload.idEnvio);
+    item.guardadoEm = new Date().toISOString();
+    delete item.erro;
+    lista.push(item);
+    const ok = ls.set('pendentes', lista);
+    atualizarFaixaPendentes();
+    return ok;
+  }
+
+  function removerPendente(idEnvio) {
+    ls.set('pendentes', ls.get('pendentes', []).filter((p) => p.payload.idEnvio !== idEnvio));
+    atualizarFaixaPendentes();
+  }
+
+  function atualizarFaixaPendentes() {
+    const lista = ls.get('pendentes', []);
+    const faixa = $('faixa-pendentes');
+    if (!lista.length) { faixa.classList.add('oculto'); return; }
+    const comErro = lista.find((p) => p.erro);
+    $('faixa-pendentes-texto').textContent = comErro
+      ? 'Um registro foi recusado: ' + comErro.erro
+      : (lista.length === 1 ? '1 registro guardado esperando envio.' : lista.length + ' registros guardados esperando envio.');
+    $('faixa-btn-enviar').classList.toggle('oculto', !!comErro);
+    $('faixa-btn-corrigir').classList.toggle('oculto', !comErro);
+    faixa.classList.remove('oculto');
+  }
+
+  async function enviarPendentes(silencioso) {
+    const lista = ls.get('pendentes', []).filter((p) => !p.erro);
+    if (!lista.length) {
+      if (!silencioso) mostrarTela('inicio');
+      return;
+    }
+    if (E.enviandoPendentes) return;
+    E.enviandoPendentes = true;
+    if (!silencioso) mostrarTela('enviando');
+
+    let ultimo = null, falhou = null;
+    for (const item of lista) {
+      try {
+        const r = await chamar(funcaoDo(item), item.payload);
+        if (r.ok) {
+          removerPendente(item.payload.idEnvio);
+          ultimo = { item: item, r: r };
+        } else {
+          marcarPendenteComErro(item.payload.idEnvio, r.erro);
+        }
+      } catch (e) {
+        falhou = e;
+        break;
+      }
+    }
+    E.enviandoPendentes = false;
+    atualizarFaixaPendentes();
+
+    if (falhou) {
+      if (!silencioso) { $('falha-detalhe').textContent = 'Detalhe: ' + falhou.message; mostrarTela('falha'); }
+      return;
+    }
+    if (ultimo) {
+      if (silencioso) {
+        mensagem('Registro guardado foi enviado ✅ (' + ultimo.r.codigo + ')', 6000);
+        if (!$('tela-inicio').classList.contains('oculto')) carregarMinhasViagens();
+      }
+      else mostrarConfirmacao(ultimo.item, ultimo.r);
+    } else if (!silencioso) {
+      mostrarTela('inicio');
+    }
+  }
+
+  function marcarPendenteComErro(idEnvio, erro) {
+    const lista = ls.get('pendentes', []);
+    lista.forEach((p) => { if (p.payload.idEnvio === idEnvio) p.erro = erro; });
+    ls.set('pendentes', lista);
+  }
+
+  /** Devolve o registro recusado para o formulário, para o motorista corrigir e reenviar. */
+  function corrigirPendente() {
+    const item = ls.get('pendentes', []).find((p) => p.erro);
+    if (!item) return;
+    const form = formDo(item);
+    const erro = item.erro;
+    // As fotos ficam só no payload (para não ocupar a memória do celular duas vezes).
+    const rascunho = Object.assign({}, item.rascunho, {
+      fotos: { fotoHodometro: item.payload.fotoHodometro, fotoTicket: item.payload.fotoTicket || undefined },
+    });
+    ls.set('rasc_' + form, rascunho);
+    removerPendente(item.payload.idEnvio);
+    if (form === 'car') {
+      abrirCarregamento();
+    } else {
+      E.viagensMostradas = [item.viagem];
+      escolherViagem(0);
+    }
+    mostrarErros($('form-' + form), [erro]);
+  }
+
+  // ---------------------------------------------------------------- confirmação e WhatsApp
+  function mostrarConfirmacao(item, r) {
+    const texto = textoWhatsApp(item, r);
+    $('ok-codigo').textContent = r.codigo;
+    $('ok-resumo').textContent = texto.replace(/\*/g, '');
+    $('ok-whatsapp').href = 'https://wa.me/?text=' + encodeURIComponent(texto);
+    mostrarTela('ok');
+  }
+
+  function textoWhatsApp(item, r) {
+    const p = item.payload;
+    if (item.tipo === 'carregamento') {
+      return [
+        '🚛 *CARREGAMENTO* – ' + r.codigo,
+        'Motorista: ' + p.motorista,
+        'Placa: ' + p.placa,
+        'Data: ' + fmtDataISO(p.data),
+        'De: ' + p.cidadeCarregamento + (p.localCarregamento ? ' (' + p.localCarregamento + ')' : ''),
+        'Para: ' + p.cidadeDescarga + (p.localDescarga ? ' (' + p.localDescarga + ')' : ''),
+        'Cliente: ' + p.cliente,
+        'Peso: ' + fmtNum(p.peso, 3) + ' t × ' + fmtMoeda(p.valorTon) + '/t = ' + fmtMoeda(p.peso * p.valorTon),
+        'Km: ' + fmtKm(p.km),
+        p.obs ? 'Obs.: ' + p.obs : '',
+      ].filter(Boolean).join('\n');
+    }
+    const v = item.viagem || {};
+    const kg = Math.round(((v.peso || 0) - p.peso) * 1000);
+    const pct = v.peso ? ((v.peso - p.peso) / v.peso * 100) : 0;
+    return [
+      '📦 *DESCARGA* – ' + r.codigo,
+      'Motorista: ' + p.motorista,
+      'Data: ' + fmtDataISO(p.data),
+      v.destino ? 'Local: ' + v.destino : '',
+      'Peso descarregado: ' + fmtNum(p.peso, 3) + ' t',
+      v.peso ? (kg >= 0 ? 'Quebra: ' + fmtKm(kg) + ' kg (' + fmtNum(pct, 2) + '%)' : 'Sobra: ' + fmtKm(-kg) + ' kg') : '',
+      'Km: ' + fmtKm(p.km),
+      p.obs ? 'Obs.: ' + p.obs : '',
+    ].filter(Boolean).join('\n');
+  }
+</script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+    }
+  </script>
+</body>
+</html>
