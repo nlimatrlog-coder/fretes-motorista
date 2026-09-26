@@ -51,6 +51,20 @@
   .instalar-texto { margin: 0; font-size: 17px; }
   .btn-instalar { background: #fff; color: var(--azul); border: 3px solid var(--dourado); font-size: 21px; margin-top: 10px; max-width: 528px; margin-left: auto; margin-right: auto; }
   .topo-motorista { font-size: 15px; opacity: .9; text-align: right; }
+  .topo-direita { display: flex; align-items: center; gap: 10px; }
+  .btn-sair {
+    background: transparent; color: #fff; border: 2px solid var(--dourado); border-radius: 8px;
+    font: inherit; font-size: 15px; font-weight: bold; padding: 6px 12px; cursor: pointer;
+  }
+  .andamento { background: var(--amarelo); border: 2px solid #e0c96b; border-radius: 12px; padding: 12px 14px; margin-top: 16px; }
+  .andamento b { font-size: 18px; }
+  .andamento .linha { color: #5f5000; font-size: 15px; margin-top: 2px; }
+  .andamento .acoes, .cartao .acoes { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .btn-acao { flex: 1 1 140px; min-height: 48px; margin: 0; font-size: 17px; padding: 8px 10px; }
+  .btn-acao-principal { background: var(--azul); color: #fff; }
+  .btn-acao-sec { background: #fff; color: var(--azul); border: 2px solid var(--azul); }
+  .btn-acao-leve { background: #fff; color: var(--cinza); border: 1px solid var(--borda); font-weight: normal; }
+  .validado { display: block; color: var(--verde); font-size: 15px; font-weight: bold; margin-top: 6px; }
 
   .faixa { padding: 10px 16px; font-size: 16px; display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
   .faixa-aviso { background: var(--amarelo); border-bottom: 1px solid #e0c96b; }
@@ -160,7 +174,10 @@
 <body>
   <header class="topo">
     <span class="topo-titulo">N LIMA <span class="topo-sub">Fretes</span></span>
-    <span id="topo-motorista" class="topo-motorista"></span>
+    <span class="topo-direita">
+      <span id="topo-motorista" class="topo-motorista"></span>
+      <button type="button" id="btn-sair" class="btn-sair oculto" onclick="sair()">Sair</button>
+    </span>
   </header>
 
   <!-- Só aparece na página própria, aberta no navegador (não no app já instalado) -->
@@ -203,18 +220,19 @@
         <span class="icone">⬇️</span>Registrar<br><b>DESCARGA</b>
       </button>
 
+      <div id="em-andamento"></div>
+
       <div class="subtitulo-linha">
         <h2 class="subtitulo">Minhas viagens</h2>
         <button type="button" class="btn-link btn-link-inline" onclick="carregarMinhasViagens()">Atualizar</button>
       </div>
       <div id="minhas-lista"></div>
-
-      <button type="button" class="btn-link" onclick="sair()">Trocar de motorista</button>
     </section>
 
     <!-- CARREGAMENTO -->
     <section id="tela-carregamento" class="tela oculto">
-      <h1>Carregamento</h1>
+      <h1 id="car-titulo">Carregamento</h1>
+      <p id="car-edicao-aviso" class="faixa faixa-info oculto"></p>
       <p id="car-rascunho" class="faixa faixa-info oculto">
         Continuando o que você começou antes.
         <button type="button" class="btn-link" onclick="limparFormulario('car')">Começar do zero</button>
@@ -313,7 +331,8 @@
 
     <!-- DESCARGA: formulário -->
     <section id="tela-descarga" class="tela oculto">
-      <h1>Descarga</h1>
+      <h1 id="desc-titulo">Descarga</h1>
+      <p id="desc-edicao-aviso" class="faixa faixa-info oculto"></p>
       <div id="desc-viagem" class="cartao"></div>
       <p id="desc-rascunho" class="faixa faixa-info oculto">
         Continuando o que você começou antes.
@@ -416,8 +435,14 @@
     viagemDescarga: null,     // viagem escolhida na descarga
     fotos: { car: {}, desc: {} },
     idEnvio: { car: null, desc: null },
+    edicao: { car: null, desc: null }, // {codigo, ...} quando o motorista está corrigindo um registro já enviado
     enviandoPendentes: false,
   };
+
+  /** Rascunhos ficam separados por motorista (outro motorista no mesmo celular não vê). */
+  function chaveRasc(form) {
+    return 'rasc_' + form + '_' + normalizar(E.motorista ? E.motorista.nome : '').replace(/ /g, '_');
+  }
 
   // ---------------------------------------------------------------- armazenamento local
   const ls = {
@@ -543,6 +568,7 @@
     window.scrollTo(0, 0);
     if (nome === 'inicio') {
       atualizarFaixaPendentes();
+      desenharEmAndamento();
       carregarMinhasViagens();
     }
   }
@@ -714,10 +740,13 @@
       });
   }
 
+  /** Sai do perfil. Rascunhos e registros guardados continuam no celular para quando ele voltar. */
   function sair() {
     ls.del('motorista');
     E.motorista = null;
     $('topo-motorista').textContent = '';
+    $('btn-sair').classList.add('oculto');
+    $('entrar-nome').value = '';
     mostrarTela('entrar');
   }
 
@@ -725,11 +754,23 @@
     const m = E.dados.motoristas.find((x) => x.nome === E.motorista.nome);
     const primeiro = E.motorista.nome.split(' ')[0];
     $('topo-motorista').textContent = m && m.apelido ? primeiro + ' (' + m.apelido + ')' : primeiro;
+    $('btn-sair').classList.remove('oculto');
+    migrarRascunhosAntigos();
+  }
+
+  /** Versões antigas guardavam um rascunho só por celular: passa para o motorista atual. */
+  function migrarRascunhosAntigos() {
+    ['car', 'desc'].forEach((form) => {
+      const antigo = ls.get('rasc_' + form, null);
+      if (antigo && !ls.get(chaveRasc(form), null)) ls.set(chaveRasc(form), antigo);
+      if (antigo) ls.del('rasc_' + form);
+    });
   }
 
   function pinRecusado(texto) {
     ls.del('motorista');
     E.motorista = null;
+    $('btn-sair').classList.add('oculto');
     mostrarTela('entrar');
     $('entrar-erro').textContent = (texto || 'PIN incorreto.') + ' Entre de novo — o que você digitou está guardado.';
     $('entrar-erro').classList.remove('oculto');
@@ -761,36 +802,57 @@
     return '<span class="etiqueta etiqueta-ok">Descarregada</span>';
   }
 
+  const NOMES_PENDENTE = {
+    carregamento: 'Carregamento aguardando envio',
+    descarga: 'Descarga aguardando envio',
+    edicaoCarregamento: 'Correção do carregamento aguardando envio',
+    edicaoDescarga: 'Correção da descarga aguardando envio',
+  };
+
   function desenharMinhasViagens(viagens, offline) {
     const pendentes = ls.get('pendentes', []).filter((p) => p.payload.motorista === E.motorista.nome);
-    const descargasNaFila = pendentes.filter((p) => p.tipo === 'descarga').map((p) => p.payload.codigo);
+    const naFila = (codigo) => pendentes.some((p) => p.payload.codigo === codigo);
     let html = offline ? '<p class="aviso">Sem sinal: mostrando a última lista guardada no celular.</p>' : '';
 
     // Registros que ainda não chegaram ao servidor.
     pendentes.forEach((p) => {
       const d = p.payload;
-      html += p.tipo === 'carregamento'
-        ? '<div class="cartao"><b>Carregamento ' + escapar(fmtDataISO(d.data)) + '</b><span class="etiqueta etiqueta-fila">Aguardando envio</span>' +
-          '<div class="linha">' + escapar(d.placa) + ' · ' + escapar(d.cidadeCarregamento) + ' → ' + escapar(d.cidadeDescarga) + '</div></div>'
-        : '<div class="cartao"><b>' + escapar(d.codigo) + '</b><span class="etiqueta etiqueta-fila">Descarga aguardando envio</span></div>';
+      html += '<div class="cartao"><b>' + escapar(d.codigo || ('Carregamento ' + fmtDataISO(d.data))) + '</b>' +
+        '<span class="etiqueta etiqueta-fila">' + NOMES_PENDENTE[p.tipo] + '</span>' +
+        (p.tipo === 'carregamento' ? '<div class="linha">' + escapar(d.placa) + ' · ' + escapar(d.cidadeCarregamento) + ' → ' + escapar(d.cidadeDescarga) + '</div>' : '') +
+        '</div>';
     });
 
     E.minhasViagens = viagens;
     viagens.forEach((v, i) => {
-      const podeDescarregar = v.status === 'Carregado' && descargasNaFila.indexOf(v.codigo) < 0;
+      const bloqueada = naFila(v.codigo) || v.status === 'Cancelado';
       let quebra = '';
       if (v.quebraKg !== null && v.pesoDescarga) {
         quebra = v.quebraKg >= 0
           ? ' · Quebra ' + fmtKm(v.quebraKg) + ' kg (' + fmtNum(v.quebraPct, 2) + '%)'
           : ' · Sobra ' + fmtKm(-v.quebraKg) + ' kg';
       }
-      html += '<div class="cartao' + (podeDescarregar ? ' cartao-viagem" onclick="descarregarMinhaViagem(' + i + ')' : '') + '">' +
-        '<b>' + escapar(v.codigo) + '</b>' + (descargasNaFila.indexOf(v.codigo) >= 0 ? '' : etiquetaStatus(v.status)) +
+      const acoes = [];
+      if (!bloqueada && v.status === 'Carregado' && !v.dataDescarga) {
+        acoes.push('<button type="button" class="btn btn-acao btn-acao-principal" onclick="descarregarMinhaViagem(' + i + ')">⬇️ Registrar descarga</button>');
+      }
+      if (!bloqueada && !v.carregamentoValidado) {
+        acoes.push('<button type="button" class="btn btn-acao btn-acao-sec" onclick="editarCarregamento(' + i + ')">✏️ Corrigir carregamento</button>');
+      }
+      if (!bloqueada && v.dataDescarga && !v.descargaValidada) {
+        acoes.push('<button type="button" class="btn btn-acao btn-acao-sec" onclick="editarDescarga(' + i + ')">✏️ Corrigir descarga</button>');
+      }
+      const validacoes = (v.carregamentoValidado ? '<span class="validado">✔ Carregamento conferido pelo escritório</span>' : '') +
+        (v.descargaValidada ? '<span class="validado">✔ Descarga conferida pelo escritório</span>' : '');
+
+      html += '<div class="cartao">' +
+        '<b>' + escapar(v.codigo) + '</b>' + (naFila(v.codigo) ? '' : etiquetaStatus(v.status)) +
         '<div class="linha">' + escapar(v.data) + ' · ' + escapar(v.origem) + ' → ' + escapar(v.destino) + '</div>' +
         '<div class="linha">' + escapar(v.cliente) + ' · ' + fmtNum(v.peso, 3) + ' t' +
         (v.pesoDescarga ? ' → ' + fmtNum(v.pesoDescarga, 3) + ' t' : '') + quebra + '</div>' +
         (v.dataDescarga ? '<div class="linha">Descarregou em ' + escapar(v.dataDescarga) + '</div>' : '') +
-        (podeDescarregar ? '<div class="cartao-acao">Toque aqui para registrar a descarga ›</div>' : '') +
+        validacoes +
+        (acoes.length ? '<div class="acoes">' + acoes.join('') + '</div>' : '') +
         '</div>';
     });
 
@@ -800,9 +862,125 @@
 
   function descarregarMinhaViagem(i) {
     const v = E.minhasViagens[i];
+    if (!podeAbrirOutroFormulario('desc', v.codigo)) return;
     if (caminhao(v.placa)) ls.set('ultimaPlaca', v.placa);
     E.viagensMostradas = [v];
     escolherViagem(0);
+  }
+
+  /** Evita perder um preenchimento em andamento ao abrir outro registro no mesmo formulário. */
+  function podeAbrirOutroFormulario(form, codigo) {
+    const r = ls.get(chaveRasc(form), null);
+    if (!rascunhoTemConteudo(r)) return true;
+    const codigoRasc = r.edicao ? r.edicao.codigo : (r.viagem ? r.viagem.codigo : null);
+    if (codigo && codigoRasc === codigo) return true;
+    mensagem('Você tem um preenchimento em andamento. Termine ou descarte no cartão amarelo antes de abrir outro.', 7000);
+    window.scrollTo(0, 0);
+    return false;
+  }
+
+  /** Abre o carregamento já enviado para correção (até o escritório validar). */
+  function editarCarregamento(i) {
+    const v = E.minhasViagens[i];
+    if (!podeAbrirOutroFormulario('car', v.codigo)) return;
+    const r = ls.get(chaveRasc('car'), null);
+    preencherPlacas($('car-placa'), v.placa);
+    if (rascunhoTemConteudo(r) && r.edicao && r.edicao.codigo === v.codigo) {
+      aplicarRascunho('car', r);
+      $('car-rascunho').classList.remove('oculto');
+    } else {
+      limparFormulario('car');
+      const clienteNaLista = E.dados.clientes.indexOf(v.cliente) >= 0;
+      const campos = {
+        placa: v.placa, data: v.dataISO,
+        cidadeCarregamento: v.origem, localCarregamento: v.localCarregamento,
+        cidadeDescarga: v.destino, localDescarga: v.localDescarga,
+        km: String(v.km), peso: fmtNum(v.peso, 2), valorTon: fmtNum(v.valorTon, 2),
+        cliente: clienteNaLista ? v.cliente : OUTRO_CLIENTE, clienteOutroNome: clienteNaLista ? '' : v.cliente,
+        obs: v.obs,
+      };
+      aplicarRascunho('car', { campos: campos, fotos: {}, idEnvio: novoIdEnvio(), edicao: { codigo: v.codigo, placa: v.placa, qtdDocs: v.qtdDocs } });
+      salvarRascunho('car');
+    }
+    calcularFrete();
+    avisarKmCarregamento();
+    mostrarTela('carregamento');
+  }
+
+  /** Abre a descarga já enviada para correção (até o escritório validar). */
+  function editarDescarga(i) {
+    const v = E.minhasViagens[i];
+    if (!podeAbrirOutroFormulario('desc', v.codigo)) return;
+    E.viagemDescarga = v;
+    mostrarCartaoViagemDescarga(v);
+    const r = ls.get(chaveRasc('desc'), null);
+    if (rascunhoTemConteudo(r) && r.edicao && r.edicao.codigo === v.codigo) {
+      aplicarRascunho('desc', r);
+      $('desc-rascunho').classList.remove('oculto');
+    } else {
+      limparFormulario('desc');
+      aplicarRascunho('desc', {
+        campos: { data: v.dataDescargaISO, peso: fmtNum(v.pesoDescarga, 2), km: String(v.kmDescarga), obs: v.obsDescarga },
+        fotos: {}, idEnvio: novoIdEnvio(), edicao: { codigo: v.codigo },
+      });
+      salvarRascunho('desc');
+    }
+    calcularQuebra();
+    avisarKmDescarga();
+    mostrarTela('descarga');
+  }
+
+  // ---------------------------------------------------------------- preenchimentos em andamento
+  /** Cartões amarelos na tela inicial para continuar o que ficou pela metade. */
+  function desenharEmAndamento() {
+    const caixa = $('em-andamento');
+    if (!E.motorista) { caixa.innerHTML = ''; return; }
+    let html = '';
+    ['car', 'desc'].forEach((form) => {
+      const r = ls.get(chaveRasc(form), null);
+      if (!rascunhoTemConteudo(r)) return;
+      const quando = r.salvoEm ? new Date(r.salvoEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+      let titulo, detalhe;
+      if (form === 'car') {
+        titulo = r.edicao ? 'Correção do carregamento ' + r.edicao.codigo : 'Carregamento em andamento';
+        detalhe = [r.campos.cidadeCarregamento, r.campos.cidadeDescarga].filter(Boolean).join(' → ');
+      } else {
+        const cod = (r.edicao && r.edicao.codigo) || (r.viagem && r.viagem.codigo) || '';
+        titulo = (r.edicao ? 'Correção da descarga ' : 'Descarga em andamento ') + cod;
+        detalhe = r.viagem ? r.viagem.origem + ' → ' + r.viagem.destino : '';
+      }
+      html += '<div class="andamento">📝 <b>' + escapar(titulo) + '</b>' +
+        (detalhe ? '<div class="linha">' + escapar(detalhe) + '</div>' : '') +
+        (quando ? '<div class="linha">Parou em ' + escapar(quando) + '</div>' : '') +
+        '<div class="acoes">' +
+        '<button type="button" class="btn btn-acao btn-acao-principal" onclick="continuarRascunho(\'' + form + '\')">Continuar</button>' +
+        '<button type="button" class="btn btn-acao btn-acao-leve" onclick="descartarRascunho(\'' + form + '\')">Descartar</button>' +
+        '</div></div>';
+    });
+    caixa.innerHTML = html;
+  }
+
+  function continuarRascunho(form) {
+    if (form === 'car') { abrirCarregamento(); return; }
+    const r = ls.get(chaveRasc('desc'), null);
+    if (!r || !r.viagem) { abrirDescarga(); return; }
+    E.viagensMostradas = [r.viagem];
+    escolherViagem(0);
+  }
+
+  /** Pede confirmação na própria tela (sem janelas do navegador) antes de apagar. */
+  function descartarRascunho(form) {
+    const caixa = $('em-andamento');
+    if (caixa.dataset.confirmar !== form) {
+      caixa.dataset.confirmar = form;
+      mensagem('Toque em "Descartar" de novo para apagar esse preenchimento.', 5000);
+      setTimeout(() => { if (caixa.dataset.confirmar === form) delete caixa.dataset.confirmar; }, 5000);
+      return;
+    }
+    delete caixa.dataset.confirmar;
+    ls.del(chaveRasc(form));
+    desenharEmAndamento();
+    mensagem('Preenchimento descartado.', 3000);
   }
 
   // ---------------------------------------------------------------- autocompletar
@@ -1030,11 +1208,11 @@
   }
 
   function salvarRascunho(form) {
-    const r = { campos: coletar(form), fotos: E.fotos[form], idEnvio: E.idEnvio[form] };
+    const r = { campos: coletar(form), fotos: E.fotos[form], idEnvio: E.idEnvio[form], edicao: E.edicao[form], salvoEm: new Date().toISOString() };
     if (form === 'desc') r.viagem = E.viagemDescarga;
-    if (!ls.set('rasc_' + form, r)) {
+    if (!ls.set(chaveRasc(form), r)) {
       r.fotos = {}; // memória do celular cheia: guarda pelo menos os textos
-      ls.set('rasc_' + form, r);
+      ls.set(chaveRasc(form), r);
     }
   }
 
@@ -1048,6 +1226,32 @@
     E.fotos[form] = r.fotos || {};
     mostrarFotosDoFormulario(form);
     E.idEnvio[form] = r.idEnvio || novoIdEnvio();
+    E.edicao[form] = r.edicao || null;
+    aplicarModo(form);
+  }
+
+  /** Ajusta a tela para "novo registro" ou "corrigindo registro já enviado". */
+  function aplicarModo(form) {
+    const ed = E.edicao[form];
+    const f = $('form-' + form);
+    const obrig = f.querySelector('[data-foto="fotoHodometro"] .obrigatorio');
+    const aviso = $(form + '-edicao-aviso');
+    if (form === 'car') {
+      $('car-titulo').textContent = ed ? 'Corrigir carregamento' : 'Carregamento';
+      $('car-placa').disabled = !!ed;
+      if (ed) $('car-placa').value = ed.placa;
+    } else {
+      $('desc-titulo').textContent = ed ? 'Corrigir descarga' : 'Descarga';
+    }
+    obrig.textContent = ed ? '(já enviada — tire outra só se quiser trocar)' : '(obrigatória)';
+    if (ed) {
+      aviso.innerHTML = 'Você está corrigindo a viagem <b>' + escapar(ed.codigo) + '</b>. Mude o que precisar e toque em <b>Enviar correção</b>.' +
+        (form === 'car' && ed.qtdDocs ? '<br>Já tem ' + ed.qtdDocs + ' foto(s) de documento. Fotos novas serão acrescentadas.' : '');
+      aviso.classList.remove('oculto');
+    } else {
+      aviso.classList.add('oculto');
+    }
+    f.querySelector('.btn-principal').textContent = ed ? 'Enviar correção' : (form === 'car' ? 'Enviar carregamento' : 'Enviar descarga');
   }
 
   function rascunhoTemConteudo(r) {
@@ -1059,7 +1263,7 @@
   }
 
   function limparFormulario(form) {
-    ls.del('rasc_' + form);
+    ls.del(chaveRasc(form));
     const f = $('form-' + form);
     f.reset();
     f.querySelectorAll('.invalido').forEach((el) => el.classList.remove('invalido'));
@@ -1068,6 +1272,8 @@
     E.fotos[form] = {};
     mostrarFotosDoFormulario(form);
     E.idEnvio[form] = novoIdEnvio();
+    E.edicao[form] = null;
+    aplicarModo(form);
     $(form + '-rascunho').classList.add('oculto');
     if (form === 'car') {
       mostrarClienteOutro(false);
@@ -1085,7 +1291,7 @@
   // ---------------------------------------------------------------- carregamento
   function abrirCarregamento() {
     preencherPlacas($('car-placa'), placaPreferida());
-    const r = ls.get('rasc_car', null);
+    const r = ls.get(chaveRasc('car'), null);
     if (rascunhoTemConteudo(r)) {
       aplicarRascunho('car', r);
       $('car-rascunho').classList.remove('oculto');
@@ -1131,8 +1337,9 @@
     else if (c.data > hojeISO()) erro('car-data', 'A data do carregamento não pode ser no futuro.');
     if (!cidadeOk('car-cidade-car')) erro('car-cidade-car', 'Escolha a cidade do carregamento na lista.');
     if (!cidadeOk('car-cidade-desc')) erro('car-cidade-desc', 'Escolha a cidade do descarregamento na lista.');
+    const ed = E.edicao.car;
     if (!(km > 0)) erro('car-km', 'Digite o km do hodômetro (só números).');
-    if (!E.fotos.car.fotoHodometro) {
+    if (!ed && !E.fotos.car.fotoHodometro) {
       erro(null, 'Tire a foto do hodômetro.');
       f.querySelector('[data-foto="fotoHodometro"] .btn-foto').classList.add('invalido');
     }
@@ -1161,9 +1368,15 @@
       cliente: ehOutro ? c.clienteOutroNome.trim() : c.cliente,
       clienteOutro: ehOutro,
       obs: c.obs,
-      fotoHodometro: E.fotos.car.fotoHodometro,
+      fotoHodometro: E.fotos.car.fotoHodometro || null,
       fotosDocs: (E.fotos.car.fotosDocs || []).slice(0, MAX_FOTOS_DOCS),
     };
+    if (ed) {
+      payload.codigo = ed.codigo;
+      payload.placa = ed.placa;
+      enviar({ tipo: 'edicaoCarregamento', payload: payload, rascunho: { campos: c, idEnvio: E.idEnvio.car, edicao: ed } });
+      return;
+    }
     ls.set('ultimaPlaca', c.placa);
     enviar({ tipo: 'carregamento', payload: payload, rascunho: { campos: c, idEnvio: E.idEnvio.car } });
   }
@@ -1222,14 +1435,19 @@
       ).join('');
   }
 
-  function escolherViagem(i) {
-    const v = E.viagensMostradas[i];
-    E.viagemDescarga = v;
+  function mostrarCartaoViagemDescarga(v) {
     $('desc-viagem').innerHTML = '<b>' + escapar(v.codigo) + '</b>' +
       '<div class="linha">Carregou em ' + escapar(v.data) + ' · ' + escapar(v.origem) + ' → ' + escapar(v.destino) + '</div>' +
       '<div class="linha">Peso carregado: ' + fmtNum(v.peso, 3) + ' t · Km: ' + fmtKm(v.km) + '</div>';
+  }
 
-    const r = ls.get('rasc_desc', null);
+  function escolherViagem(i) {
+    const v = E.viagensMostradas[i];
+    if (!podeAbrirOutroFormulario('desc', v.codigo)) { mostrarTela('inicio'); return; }
+    E.viagemDescarga = v;
+    mostrarCartaoViagemDescarga(v);
+
+    const r = ls.get(chaveRasc('desc'), null);
     if (r && r.viagem && r.viagem.codigo === v.codigo && rascunhoTemConteudo(r)) {
       aplicarRascunho('desc', r);
       $('desc-rascunho').classList.remove('oculto');
@@ -1284,8 +1502,9 @@
     if (!(peso > 0)) erro('desc-peso', 'Digite o peso descarregado em toneladas (ex.: 37,30).');
     else if (peso > E.dados.pesoMax && peso >= 1000) erro('desc-peso', 'O peso parece estar em quilos. Digite em toneladas: ex. 37,30.');
     else if (peso < E.dados.pesoMin || peso > E.dados.pesoMax) erro('desc-peso', 'O peso precisa estar entre ' + E.dados.pesoMin + ' e ' + E.dados.pesoMax + ' toneladas.');
+    const ed = E.edicao.desc;
     if (!(km > 0)) erro('desc-km', 'Digite o km do hodômetro (só números).');
-    if (!E.fotos.desc.fotoHodometro) {
+    if (!ed && !E.fotos.desc.fotoHodometro) {
       erro(null, 'Tire a foto do hodômetro.');
       f.querySelector('[data-foto="fotoHodometro"] .btn-foto').classList.add('invalido');
     }
@@ -1300,17 +1519,22 @@
       peso: peso,
       km: km,
       obs: c.obs,
-      fotoHodometro: E.fotos.desc.fotoHodometro,
+      fotoHodometro: E.fotos.desc.fotoHodometro || null,
       fotoTicket: E.fotos.desc.fotoTicket || null,
     };
-    enviar({ tipo: 'descarga', payload: payload, viagem: v, rascunho: { campos: c, idEnvio: E.idEnvio.desc, viagem: v } });
+    const rascunho = { campos: c, idEnvio: E.idEnvio.desc, viagem: v, edicao: ed };
+    enviar({ tipo: ed ? 'edicaoDescarga' : 'descarga', payload: payload, viagem: v, rascunho: rascunho });
   }
 
   // ---------------------------------------------------------------- envio e fila de pendentes
-  function funcaoDo(item) {
-    return item.tipo === 'carregamento' ? 'motoristaRegistrarCarregamento' : 'motoristaRegistrarDescarga';
-  }
-  function formDo(item) { return item.tipo === 'carregamento' ? 'car' : 'desc'; }
+  const FUNCOES_ENVIO = {
+    carregamento: 'motoristaRegistrarCarregamento',
+    descarga: 'motoristaRegistrarDescarga',
+    edicaoCarregamento: 'motoristaEditarCarregamento',
+    edicaoDescarga: 'motoristaEditarDescarga',
+  };
+  function funcaoDo(item) { return FUNCOES_ENVIO[item.tipo]; }
+  function formDo(item) { return item.tipo === 'carregamento' || item.tipo === 'edicaoCarregamento' ? 'car' : 'desc'; }
 
   async function enviar(item) {
     const form = formDo(item);
@@ -1430,7 +1654,7 @@
         fotosDocs: item.payload.fotosDocs || undefined,
       },
     });
-    ls.set('rasc_' + form, rascunho);
+    ls.set(chaveRasc(form), rascunho);
     removerPendente(item.payload.idEnvio);
     if (form === 'car') {
       abrirCarregamento();
@@ -1452,9 +1676,10 @@
 
   function textoWhatsApp(item, r) {
     const p = item.payload;
-    if (item.tipo === 'carregamento') {
+    const correcao = item.tipo === 'edicaoCarregamento' || item.tipo === 'edicaoDescarga';
+    if (item.tipo === 'carregamento' || item.tipo === 'edicaoCarregamento') {
       return [
-        '🚛 *CARREGAMENTO* – ' + r.codigo,
+        (correcao ? '✏️ *CARREGAMENTO CORRIGIDO* – ' : '🚛 *CARREGAMENTO* – ') + r.codigo,
         'Motorista: ' + p.motorista,
         'Placa: ' + p.placa,
         'Data: ' + fmtDataISO(p.data),
@@ -1470,7 +1695,7 @@
     const kg = Math.round(((v.peso || 0) - p.peso) * 1000);
     const pct = v.peso ? ((v.peso - p.peso) / v.peso * 100) : 0;
     return [
-      '📦 *DESCARGA* – ' + r.codigo,
+      (correcao ? '✏️ *DESCARGA CORRIGIDA* – ' : '📦 *DESCARGA* – ') + r.codigo,
       'Motorista: ' + p.motorista,
       'Data: ' + fmtDataISO(p.data),
       v.destino ? 'Local: ' + v.destino : '',
