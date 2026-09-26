@@ -104,6 +104,7 @@
     font-size: 17px; padding: 12px 0; margin: 18px auto 0; display: block; cursor: pointer; font-family: inherit;
   }
 
+  .btn-link-esquerda { margin: 6px 0 0; padding: 6px 0; font-size: 16px; }
   .foto { margin-top: 6px; }
   .foto-botoes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .foto-botoes .btn { margin-top: 0; padding: 12px 8px; font-size: 18px; }
@@ -239,7 +240,9 @@
       </p>
       <form id="form-car" autocomplete="off" onsubmit="return false">
         <label class="rotulo" for="car-placa">Caminhão (placa)</label>
-        <select id="car-placa" name="placa" class="campo"></select>
+        <select id="car-placa" name="placa" class="campo" onchange="avisarPlacaForaDoVinculo('car')"></select>
+        <button type="button" id="car-outra-placa" class="btn-link btn-link-esquerda oculto" onclick="mostrarTodasAsPlacas('car')">Estou em outro caminhão</button>
+        <p id="car-placa-aviso" class="aviso oculto">⚠️ Esse caminhão não é o seu. A viagem será registrada, mas o escritório recebe um aviso e precisa liberar essa placa.</p>
 
         <label class="rotulo" for="car-data">Data do carregamento</label>
         <input id="car-data" name="data" class="campo" type="date">
@@ -324,6 +327,7 @@
       <h1>Descarga</h1>
       <label class="rotulo" for="desc-placa">Caminhão (placa)</label>
       <select id="desc-placa" class="campo" onchange="buscarViagensAbertas()"></select>
+      <button type="button" id="desc-outra-placa" class="btn-link btn-link-esquerda oculto" onclick="mostrarTodasAsPlacas('desc')">Estou em outro caminhão</button>
       <p class="rotulo">Qual viagem você está descarregando?</p>
       <div id="desc-lista"></div>
       <button type="button" class="btn btn-voltar" onclick="mostrarTela('inicio')">Voltar</button>
@@ -577,17 +581,46 @@
     return ((E.dados && E.dados.caminhoes) || []).find((c) => c.placa === placa) || null;
   }
 
+  /**
+   * Motorista com caminhão cadastrado vê só a placa dele. "Estou em outro caminhão"
+   * libera as demais (o servidor marca a viagem e o gestor precisa liberar).
+   */
   function preencherPlacas(select, selecionada) {
-    select.innerHTML = E.dados.caminhoes.map((c) =>
-      '<option value="' + escapar(c.placa) + '">' + escapar((c.apelido ? c.apelido + ' – ' : '') + c.placa) + '</option>'
+    const form = select.id === 'car-placa' ? 'car' : 'desc';
+    const padrao = E.dados.placaPadrao || '';
+    E.todasPlacas = E.todasPlacas || {};
+    const restrito = !!padrao && !!caminhao(padrao) && !E.todasPlacas[form] && (!selecionada || selecionada === padrao);
+    const lista = restrito ? E.dados.caminhoes.filter((c) => c.placa === padrao) : E.dados.caminhoes;
+    select.innerHTML = lista.map((c) =>
+      '<option value="' + escapar(c.placa) + '">' + escapar((c.apelido ? c.apelido + ' – ' : '') + c.placa) +
+      (padrao && c.placa === padrao ? ' (seu caminhão)' : '') + '</option>'
     ).join('');
+    const link = $(form + '-outra-placa');
+    if (link) link.classList.toggle('oculto', !restrito);
+    if (restrito) selecionada = padrao;
     if (selecionada && caminhao(selecionada)) select.value = selecionada;
   }
 
   function placaPreferida() {
+    if (E.dados.placaPadrao && caminhao(E.dados.placaPadrao)) return E.dados.placaPadrao;
     const ultima = ls.get('ultimaPlaca', '');
-    if (ultima && caminhao(ultima)) return ultima;
-    return E.dados.placaPadrao || '';
+    return ultima && caminhao(ultima) ? ultima : '';
+  }
+
+  function mostrarTodasAsPlacas(form) {
+    E.todasPlacas = E.todasPlacas || {};
+    E.todasPlacas[form] = true;
+    const select = $(form + '-placa');
+    preencherPlacas(select, select.value);
+    mensagem('Escolha o caminhão. O escritório vai receber um aviso para liberar.', 5000);
+    if (form === 'car') avisarPlacaForaDoVinculo('car');
+  }
+
+  function avisarPlacaForaDoVinculo(form) {
+    const aviso = $(form + '-placa-aviso');
+    if (!aviso) return;
+    const padrao = E.dados.placaPadrao || '';
+    aviso.classList.toggle('oculto', !(padrao && $(form + '-placa').value && $(form + '-placa').value !== padrao));
   }
 
   // ---------------------------------------------------------------- instalar como aplicativo
@@ -1218,6 +1251,8 @@
 
   function aplicarRascunho(form, r) {
     const f = $('form-' + form);
+    // Rascunho feito em outro caminhão: a lista precisa conter essa placa.
+    if (form === 'car' && r.campos && r.campos.placa) preencherPlacas($('car-placa'), r.campos.placa);
     Object.keys(r.campos || {}).forEach((nome) => {
       const el = f.querySelector('[name="' + nome + '"]');
       if (el) el.value = r.campos[nome];
@@ -1228,6 +1263,7 @@
     E.idEnvio[form] = r.idEnvio || novoIdEnvio();
     E.edicao[form] = r.edicao || null;
     aplicarModo(form);
+    if (form === 'car') avisarPlacaForaDoVinculo('car');
   }
 
   /** Ajusta a tela para "novo registro" ou "corrigindo registro já enviado". */
@@ -1278,7 +1314,10 @@
     if (form === 'car') {
       mostrarClienteOutro(false);
       $('car-data').value = hojeISO();
-      $('car-placa').value = placaPreferida() || $('car-placa').value;
+      E.todasPlacas = E.todasPlacas || {};
+      E.todasPlacas.car = false;
+      preencherPlacas($('car-placa'), placaPreferida());
+      $('car-placa-aviso').classList.add('oculto');
       $('car-km-aviso').classList.add('oculto');
       calcularFrete();
     } else {
@@ -1393,6 +1432,8 @@
 
   // ---------------------------------------------------------------- descarga
   function abrirDescarga() {
+    E.todasPlacas = E.todasPlacas || {};
+    E.todasPlacas.desc = false;
     preencherPlacas($('desc-placa'), placaPreferida());
     mostrarTela('descarga-escolher');
     buscarViagensAbertas();
@@ -1689,6 +1730,7 @@
         'Peso: ' + fmtNum(p.peso, 3) + ' t × ' + fmtMoeda(p.valorTon) + '/t = ' + fmtMoeda(p.peso * p.valorTon),
         'Km: ' + fmtKm(p.km),
         p.obs ? 'Obs.: ' + p.obs : '',
+        r.foraDoVinculo ? '⚠️ Placa fora do vínculo do motorista — aguardando liberação do escritório' : '',
       ].filter(Boolean).join('\n');
     }
     const v = item.viagem || {};
