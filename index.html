@@ -91,6 +91,18 @@
   }
 
   .foto { margin-top: 6px; }
+  .foto-botoes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .foto-botoes .btn { margin-top: 0; padding: 12px 8px; font-size: 18px; }
+  .btn-galeria { font-weight: normal; }
+  .miniaturas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .miniaturas:empty { display: none; }
+  .miniatura { position: relative; }
+  .miniatura img { width: 100%; height: 96px; object-fit: cover; border-radius: 8px; border: 1px solid var(--borda); display: block; }
+  .miniatura button {
+    position: absolute; top: 4px; right: 4px; width: 34px; height: 34px; border-radius: 50%; border: 0;
+    background: rgba(0, 0, 0, .65); color: #fff; font-size: 20px; line-height: 34px; cursor: pointer; padding: 0;
+  }
+  .campo-mascara { text-align: right; font-variant-numeric: tabular-nums; }
   .foto-previa { display: block; max-width: 100%; max-height: 220px; margin: 10px auto 0; border-radius: 8px; border: 1px solid var(--borda); }
 
   .calculado { margin-top: 12px; padding: 12px; background: var(--azul-claro); border-radius: 10px; font-size: 19px; }
@@ -238,17 +250,22 @@
 
         <div class="foto" data-foto="fotoHodometro">
           <span class="rotulo">Foto do hodômetro <b class="obrigatorio">(obrigatória)</b></span>
-          <label class="btn btn-foto"><span class="btn-foto-texto">📷 Tirar foto do hodômetro</span>
-            <input type="file" accept="image/*" capture="environment" class="oculto">
-          </label>
-          <img class="foto-previa oculto" alt="Foto do hodômetro">
+          <div class="foto-botoes">
+            <label class="btn btn-foto"><span class="btn-foto-texto">📷 Tirar foto</span>
+              <input type="file" accept="image/*" capture="environment" class="oculto">
+            </label>
+            <label class="btn btn-foto btn-galeria">🖼️ Galeria
+              <input type="file" accept="image/*" class="oculto">
+            </label>
+          </div>
+          <img class="foto-previa oculto" alt="">
         </div>
 
         <label class="rotulo" for="car-peso">Peso da carga (toneladas)</label>
-        <input id="car-peso" name="peso" class="campo" inputmode="decimal" placeholder="Ex.: 37,45">
+        <input id="car-peso" name="peso" class="campo campo-mascara" inputmode="numeric" value="0,00" data-mascara>
 
         <label class="rotulo" for="car-valor">Valor por tonelada (R$)</label>
-        <input id="car-valor" name="valorTon" class="campo" inputmode="decimal" placeholder="Ex.: 150,00">
+        <input id="car-valor" name="valorTon" class="campo campo-mascara" inputmode="numeric" value="0,00" data-mascara>
 
         <div class="calculado">Frete estimado: <b id="car-frete">R$ 0,00</b></div>
 
@@ -262,12 +279,17 @@
           <input id="car-cliente-outro" name="clienteOutroNome" class="campo" placeholder="Como está no CT-e">
         </div>
 
-        <div class="foto" data-foto="fotoTicket">
-          <span class="rotulo">Foto do ticket / ordem de carregamento (opcional)</span>
-          <label class="btn btn-foto btn-foto-secundario"><span class="btn-foto-texto">📷 Tirar foto do ticket</span>
-            <input type="file" accept="image/*" capture="environment" class="oculto">
-          </label>
-          <img class="foto-previa oculto" alt="Foto do ticket">
+        <div class="foto foto-multipla" data-fotos="fotosDocs">
+          <span class="rotulo">Foto doc do frete — MDF, CT-e, Contrato, NF Produto (opcional, pode colocar várias)</span>
+          <div class="miniaturas"></div>
+          <div class="foto-botoes">
+            <label class="btn btn-foto"><span class="btn-foto-texto">📷 Tirar foto</span>
+              <input type="file" accept="image/*" capture="environment" class="oculto">
+            </label>
+            <label class="btn btn-foto btn-galeria">🖼️ Galeria
+              <input type="file" accept="image/*" multiple class="oculto">
+            </label>
+          </div>
         </div>
 
         <label class="rotulo" for="car-obs">Observação (opcional)</label>
@@ -302,7 +324,7 @@
         <input id="desc-data" name="data" class="campo" type="date">
 
         <label class="rotulo" for="desc-peso">Peso descarregado (toneladas)</label>
-        <input id="desc-peso" name="peso" class="campo" inputmode="decimal" placeholder="Ex.: 37,30">
+        <input id="desc-peso" name="peso" class="campo campo-mascara" inputmode="numeric" value="0,00" data-mascara>
         <div class="calculado" id="desc-quebra">Quebra: —</div>
 
         <label class="rotulo" for="desc-km">Km do caminhão (hodômetro)</label>
@@ -311,18 +333,28 @@
 
         <div class="foto" data-foto="fotoHodometro">
           <span class="rotulo">Foto do hodômetro <b class="obrigatorio">(obrigatória)</b></span>
-          <label class="btn btn-foto"><span class="btn-foto-texto">📷 Tirar foto do hodômetro</span>
-            <input type="file" accept="image/*" capture="environment" class="oculto">
-          </label>
-          <img class="foto-previa oculto" alt="Foto do hodômetro">
+          <div class="foto-botoes">
+            <label class="btn btn-foto"><span class="btn-foto-texto">📷 Tirar foto</span>
+              <input type="file" accept="image/*" capture="environment" class="oculto">
+            </label>
+            <label class="btn btn-foto btn-galeria">🖼️ Galeria
+              <input type="file" accept="image/*" class="oculto">
+            </label>
+          </div>
+          <img class="foto-previa oculto" alt="">
         </div>
 
         <div class="foto" data-foto="fotoTicket">
           <span class="rotulo">Foto do ticket de descarga (opcional)</span>
-          <label class="btn btn-foto btn-foto-secundario"><span class="btn-foto-texto">📷 Tirar foto do ticket</span>
-            <input type="file" accept="image/*" capture="environment" class="oculto">
-          </label>
-          <img class="foto-previa oculto" alt="Foto do ticket">
+          <div class="foto-botoes">
+            <label class="btn btn-foto"><span class="btn-foto-texto">📷 Tirar foto</span>
+              <input type="file" accept="image/*" capture="environment" class="oculto">
+            </label>
+            <label class="btn btn-foto btn-galeria">🖼️ Galeria
+              <input type="file" accept="image/*" class="oculto">
+            </label>
+          </div>
+          <img class="foto-previa oculto" alt="">
         </div>
 
         <label class="rotulo" for="desc-obs">Observação (opcional)</label>
@@ -852,26 +884,83 @@
   }
 
   // ---------------------------------------------------------------- fotos
+  const MAX_FOTOS_DOCS = 10;
+
+  /** Cada bloco de foto tem dois botões: câmera (capture) e galeria (sem capture). */
   function ligarFotos() {
     document.querySelectorAll('.foto').forEach((div) => {
-      const input = div.querySelector('input[type=file]');
-      input.addEventListener('change', async () => {
-        const arquivo = input.files && input.files[0];
-        if (!arquivo) return;
-        const form = div.closest('form').id === 'form-car' ? 'car' : 'desc';
-        mensagem('Preparando a foto…', 8000);
-        try {
-          const dataUrl = await comprimirFoto(arquivo);
-          E.fotos[form][div.dataset.foto] = dataUrl;
-          mostrarPrevia(div, dataUrl);
-          salvarRascunho(form);
-          mensagem('Foto pronta ✅', 2000);
-        } catch (e) {
-          mensagem(e.message);
-        }
-        input.value = '';
+      const form = div.closest('form').id === 'form-car' ? 'car' : 'desc';
+      div.querySelectorAll('input[type=file]').forEach((input) => {
+        input.addEventListener('change', async () => {
+          const arquivos = Array.from(input.files || []);
+          input.value = '';
+          if (!arquivos.length) return;
+          if (div.dataset.fotos) await adicionarFotosMultiplas(form, div, arquivos);
+          else await trocarFotoUnica(form, div, arquivos[0]);
+        });
       });
     });
+  }
+
+  async function trocarFotoUnica(form, div, arquivo) {
+    mensagem('Preparando a foto…', 8000);
+    try {
+      const dataUrl = await comprimirFoto(arquivo);
+      E.fotos[form][div.dataset.foto] = dataUrl;
+      mostrarPrevia(div, dataUrl);
+      salvarRascunho(form);
+      mensagem('Foto pronta ✅', 2000);
+    } catch (e) {
+      mensagem(e.message);
+    }
+  }
+
+  async function adicionarFotosMultiplas(form, div, arquivos) {
+    const campo = div.dataset.fotos;
+    const lista = E.fotos[form][campo] || [];
+    const vagas = MAX_FOTOS_DOCS - lista.length;
+    if (vagas <= 0) { mensagem('Limite de ' + MAX_FOTOS_DOCS + ' fotos de documentos.'); return; }
+    mensagem('Preparando ' + Math.min(vagas, arquivos.length) + ' foto(s)…', 10000);
+    for (const arquivo of arquivos.slice(0, vagas)) {
+      try { lista.push(await comprimirFoto(arquivo)); } catch (e) { mensagem(e.message); }
+    }
+    E.fotos[form][campo] = lista;
+    desenharMiniaturas(div, lista);
+    salvarRascunho(form);
+    mensagem(arquivos.length > vagas ? 'Só cabem ' + MAX_FOTOS_DOCS + ' fotos. As demais ficaram de fora.' : 'Foto(s) pronta(s) ✅', 3000);
+  }
+
+  function desenharMiniaturas(div, lista) {
+    const caixa = div.querySelector('.miniaturas');
+    caixa.innerHTML = (lista || []).map((url, i) =>
+      '<div class="miniatura"><img src="' + url + '" alt="Documento ' + (i + 1) + '">' +
+      '<button type="button" aria-label="Tirar esta foto" data-indice="' + i + '">×</button></div>'
+    ).join('');
+    caixa.querySelectorAll('button').forEach((b) => {
+      b.addEventListener('click', () => {
+        const form = div.closest('form').id === 'form-car' ? 'car' : 'desc';
+        E.fotos[form][div.dataset.fotos].splice(Number(b.dataset.indice), 1);
+        desenharMiniaturas(div, E.fotos[form][div.dataset.fotos]);
+        salvarRascunho(form);
+      });
+    });
+    const texto = div.querySelector('.btn-foto-texto');
+    texto.textContent = lista && lista.length ? '📷 Mais uma' : '📷 Tirar foto';
+  }
+
+  /** Mostra as fotos guardadas (rascunho) em todos os blocos de um formulário. */
+  function mostrarFotosDoFormulario(form) {
+    const f = $('form-' + form);
+    f.querySelectorAll('.foto[data-foto]').forEach((div) => mostrarPrevia(div, E.fotos[form][div.dataset.foto] || null));
+    f.querySelectorAll('.foto[data-fotos]').forEach((div) => desenharMiniaturas(div, E.fotos[form][div.dataset.fotos] || []));
+  }
+
+  /** Campo com vírgula automática: o motorista digita só números (3745 → 37,45). */
+  function aplicarMascara(el) {
+    const digitos = el.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 9);
+    el.value = fmtNum(Number(digitos || '0') / 100, 2);
+    const fim = el.value.length;
+    try { el.setSelectionRange(fim, fim); } catch (e) { /* alguns teclados não deixam */ }
   }
 
   /** Reduz para no máximo 1280 px no lado maior e JPEG qualidade 0,7. */
@@ -903,7 +992,8 @@
       img.src = dataUrl;
       img.classList.remove('oculto');
       botao.classList.add('tem-foto');
-      texto.textContent = '✅ Foto pronta (toque para tirar outra)';
+      botao.classList.remove('invalido');
+      texto.textContent = '✅ Tirar outra';
     } else {
       img.removeAttribute('src');
       img.classList.add('oculto');
@@ -920,6 +1010,11 @@
       const salvar = () => { clearTimeout(timerRascunho[form]); timerRascunho[form] = setTimeout(() => salvarRascunho(form), 400); };
       f.addEventListener('input', salvar);
       f.addEventListener('change', salvar);
+    });
+    // A máscara é ligada no próprio campo, então roda antes do salvamento do rascunho (que escuta o formulário).
+    document.querySelectorAll('[data-mascara]').forEach((el) => {
+      el.addEventListener('input', () => aplicarMascara(el));
+      el.addEventListener('focus', () => setTimeout(() => { const n = el.value.length; try { el.setSelectionRange(n, n); } catch (e) { /* ignora */ } }, 0));
     });
     ['car-peso', 'car-valor'].forEach((id) => $(id).addEventListener('input', calcularFrete));
     $('car-km').addEventListener('input', avisarKmCarregamento);
@@ -951,15 +1046,16 @@
     });
     f.querySelectorAll('input[data-auto]').forEach(revalidarAuto);
     E.fotos[form] = r.fotos || {};
-    f.querySelectorAll('.foto').forEach((div) => mostrarPrevia(div, E.fotos[form][div.dataset.foto] || null));
+    mostrarFotosDoFormulario(form);
     E.idEnvio[form] = r.idEnvio || novoIdEnvio();
   }
 
   function rascunhoTemConteudo(r) {
     if (!r || !r.campos) return false;
     const ignorar = { placa: 1, data: 1 };
-    return Object.keys(r.campos).some((k) => !ignorar[k] && String(r.campos[k]).trim()) ||
-      Object.keys(r.fotos || {}).length > 0;
+    const vazio = (v) => !String(v).trim() || String(v).trim() === '0,00';
+    return Object.keys(r.campos).some((k) => !ignorar[k] && !vazio(r.campos[k])) ||
+      Object.values(r.fotos || {}).some((v) => Array.isArray(v) ? v.length > 0 : !!v);
   }
 
   function limparFormulario(form) {
@@ -970,7 +1066,7 @@
     f.querySelectorAll('input[data-auto]').forEach((el) => { el.dataset.ok = ''; });
     f.querySelector('[data-erros]').classList.add('oculto');
     E.fotos[form] = {};
-    f.querySelectorAll('.foto').forEach((div) => mostrarPrevia(div, null));
+    mostrarFotosDoFormulario(form);
     E.idEnvio[form] = novoIdEnvio();
     $(form + '-rascunho').classList.add('oculto');
     if (form === 'car') {
@@ -1066,7 +1162,7 @@
       clienteOutro: ehOutro,
       obs: c.obs,
       fotoHodometro: E.fotos.car.fotoHodometro,
-      fotoTicket: E.fotos.car.fotoTicket || null,
+      fotosDocs: (E.fotos.car.fotosDocs || []).slice(0, MAX_FOTOS_DOCS),
     };
     ls.set('ultimaPlaca', c.placa);
     enviar({ tipo: 'carregamento', payload: payload, rascunho: { campos: c, idEnvio: E.idEnvio.car } });
@@ -1328,7 +1424,11 @@
     const erro = item.erro;
     // As fotos ficam só no payload (para não ocupar a memória do celular duas vezes).
     const rascunho = Object.assign({}, item.rascunho, {
-      fotos: { fotoHodometro: item.payload.fotoHodometro, fotoTicket: item.payload.fotoTicket || undefined },
+      fotos: {
+        fotoHodometro: item.payload.fotoHodometro,
+        fotoTicket: item.payload.fotoTicket || undefined,
+        fotosDocs: item.payload.fotosDocs || undefined,
+      },
     });
     ls.set('rasc_' + form, rascunho);
     removerPendente(item.payload.idEnvio);
