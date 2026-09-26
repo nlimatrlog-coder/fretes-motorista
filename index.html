@@ -2,16 +2,18 @@
 <html lang="pt-BR">
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Fretes – Motorista</title>
+  <title>N Lima – Fretes</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icone-192.png">
-  <link rel="apple-touch-icon" href="icone-192.png">
+  <link rel="apple-touch-icon" href="icone-180.png">
   <meta charset="utf-8">
-  <meta name="theme-color" content="#1f4e78">
+  <meta name="theme-color" content="#0b4a34">
   <style>
+  /* Cores da marca N Lima: verde (--azul, nome mantido) e dourado. */
   :root {
-    --azul: #1f4e78;
-    --azul-claro: #e8f0f8;
+    --azul: #0b4a34;
+    --azul-claro: #e6f2ec;
+    --dourado: #f5af29;
     --verde: #1e7a34;
     --laranja: #c55a11;
     --vermelho: #b3261e;
@@ -40,7 +42,14 @@
     display: flex; justify-content: space-between; align-items: center;
     background: var(--azul); color: #fff; padding: 12px 16px;
   }
-  .topo-titulo { font-size: 20px; font-weight: bold; }
+  .topo { border-bottom: 3px solid var(--dourado); }
+  .topo-titulo { font-size: 20px; font-weight: 800; letter-spacing: 1px; }
+  .topo-sub { color: var(--dourado); font-weight: 600; letter-spacing: 0; margin-left: 4px; }
+  .logo-entrada { display: block; width: 100%; max-width: 360px; margin: 4px auto 8px; border-radius: 12px; }
+
+  .instalar { background: var(--azul-claro); border-bottom: 2px solid var(--dourado); padding: 12px 16px; text-align: center; }
+  .instalar-texto { margin: 0; font-size: 17px; }
+  .btn-instalar { background: #fff; color: var(--azul); border: 3px solid var(--dourado); font-size: 21px; margin-top: 10px; max-width: 528px; margin-left: auto; margin-right: auto; }
   .topo-motorista { font-size: 15px; opacity: .9; text-align: right; }
 
   .faixa { padding: 10px 16px; font-size: 16px; display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
@@ -70,8 +79,8 @@
   .btn-gigante { min-height: 150px; font-size: 24px; font-weight: normal; color: #fff; margin: 18px 0 0; line-height: 1.3; }
   .btn-gigante b { font-size: 30px; }
   .btn-gigante .icone { display: block; font-size: 34px; }
-  .btn-carregar { background: var(--verde); }
-  .btn-descarregar { background: var(--laranja); }
+  .btn-carregar { background: var(--dourado); color: var(--azul); }
+  .btn-descarregar { background: var(--azul); }
   .btn-foto { background: var(--azul-claro); color: var(--azul); border: 2px dashed var(--azul); }
   .btn-foto.tem-foto { border-style: solid; background: #e6f4ea; color: var(--verde); border-color: var(--verde); }
   .btn-foto-secundario { font-weight: normal; }
@@ -138,9 +147,15 @@
 </head>
 <body>
   <header class="topo">
-    <span class="topo-titulo">🚛 Fretes</span>
+    <span class="topo-titulo">N LIMA <span class="topo-sub">Fretes</span></span>
     <span id="topo-motorista" class="topo-motorista"></span>
   </header>
+
+  <!-- Só aparece na página própria, aberta no navegador (não no app já instalado) -->
+  <div id="faixa-instalar" class="instalar oculto">
+    <p id="instalar-texto" class="instalar-texto"></p>
+    <button type="button" id="instalar-botao" class="btn btn-instalar oculto" onclick="instalarApp()">📲 Instalar o app no celular</button>
+  </div>
 
   <div id="faixa-pendentes" class="faixa faixa-aviso oculto">
     <span id="faixa-pendentes-texto"></span>
@@ -157,6 +172,7 @@
 
     <!-- ENTRAR -->
     <section id="tela-entrar" class="tela oculto">
+      <img class="logo-entrada" src="logo.png" alt="N Lima Transportes e Logística" onerror="this.remove()">
       <h1>Quem é você?</h1>
       <label class="rotulo" for="entrar-nome">Motorista</label>
       <select id="entrar-nome" class="campo"></select>
@@ -516,6 +532,53 @@
     return E.dados.placaPadrao || '';
   }
 
+  // ---------------------------------------------------------------- instalar como aplicativo
+  // O Chrome do Android avisa (beforeinstallprompt) quando a página pode ser instalada;
+  // guardamos o aviso e mostramos um botão grande. No iPhone não existe isso: só instruções.
+  let pedidoInstalacao = null;
+
+  window.addEventListener('beforeinstallprompt', (ev) => {
+    ev.preventDefault();
+    pedidoInstalacao = ev;
+    atualizarFaixaInstalar();
+  });
+  window.addEventListener('appinstalled', () => {
+    pedidoInstalacao = null;
+    $('faixa-instalar').classList.add('oculto');
+    mensagem('App instalado ✅ Procure o ícone da N Lima na tela inicial do celular.', 8000);
+  });
+
+  function ehAppInstalado() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
+
+  function atualizarFaixaInstalar() {
+    const faixa = $('faixa-instalar');
+    if (!window.API_URL || ehAppInstalado()) { faixa.classList.add('oculto'); return; }
+    const iphone = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const texto = $('instalar-texto');
+    const botao = $('instalar-botao');
+    if (pedidoInstalacao) {
+      texto.textContent = 'Coloque o app da N Lima na tela inicial do seu celular:';
+      botao.classList.remove('oculto');
+    } else if (iphone) {
+      texto.innerHTML = 'Para instalar: toque em <b>Compartilhar</b> (quadrado com seta ↑) e depois em <b>"Adicionar à Tela de Início"</b>.';
+      botao.classList.add('oculto');
+    } else {
+      texto.innerHTML = 'Para instalar: toque nos <b>⋮</b> (canto de cima do Chrome) e depois em <b>"Instalar app"</b> ou <b>"Adicionar à tela inicial"</b>.';
+      botao.classList.add('oculto');
+    }
+    faixa.classList.remove('oculto');
+  }
+
+  async function instalarApp() {
+    if (!pedidoInstalacao) return;
+    pedidoInstalacao.prompt();
+    await pedidoInstalacao.userChoice;
+    pedidoInstalacao = null;
+    atualizarFaixaInstalar();
+  }
+
   // ---------------------------------------------------------------- início
   window.addEventListener('load', iniciar);
   window.addEventListener('online', () => enviarPendentes(true));
@@ -526,6 +589,7 @@
     ligarFormularios();
     E.motorista = ls.get('motorista', null);
     atualizarFaixaPendentes();
+    atualizarFaixaInstalar();
 
     // Caminhões e clientes só vêm do servidor com nome + PIN válidos.
     const guardado = ls.get('dados', null);
