@@ -694,6 +694,7 @@
         prosseguir();
         carregarMunicipios(d.qtdMunicipios);
         enviarPendentes(true);
+        setTimeout(sincronizarRascunhos, 4000);
       })
       .catch(() => {
         if (guardado) {
@@ -763,6 +764,7 @@
         E.dados = r.dados;
         E.clientesBusca = (E.dados.clientes || []).map(normalizar);
         ls.set('dados', E.dados);
+        setTimeout(sincronizarRascunhos, 4000);
         $('entrar-pin').value = '';
         mostrarMotoristaNoTopo();
         mostrarTela('inicio');
@@ -992,6 +994,66 @@
     });
     caixa.innerHTML = html;
   }
+
+  // ---------------------------------------------------------------- cópia do rascunho para o gestor
+  // Alguns segundos depois de cada alteração, manda ao servidor um resumo (sem fotos)
+  // do que está sendo preenchido; quando o preenchimento é enviado ou descartado, apaga.
+  const ESPERA_SINC_RASCUNHO_MS = 8000;
+  E.timerSinc = {};
+  E.ultimoSinc = {};
+
+  function agendarSincRascunho(form) {
+    clearTimeout(E.timerSinc[form]);
+    E.timerSinc[form] = setTimeout(() => sincronizarRascunho(form), ESPERA_SINC_RASCUNHO_MS);
+  }
+
+  function resumoRascunho(form, r) {
+    const c = r.campos || {};
+    const v = r.viagem || {};
+    const qtdFotos = Object.values(r.fotos || {}).reduce((s, x) => s + (Array.isArray(x) ? x.length : (x ? 1 : 0)), 0);
+    const peso = lerNumero(c.peso);
+    return form === 'car' ? {
+      form: 'car',
+      etapa: r.edicao ? 'Correção do carregamento' : 'Carregamento',
+      codigo: r.edicao ? r.edicao.codigo : '',
+      placa: c.placa || '',
+      cliente: c.cliente === OUTRO_CLIENTE ? (c.clienteOutroNome || '') : (c.cliente || ''),
+      origem: c.cidadeCarregamento || '',
+      destino: c.cidadeDescarga || '',
+      peso: peso > 0 ? peso : '',
+      fotos: qtdFotos,
+      iniciadoEm: r.iniciadoEm,
+    } : {
+      form: 'desc',
+      etapa: r.edicao ? 'Correção da descarga' : 'Descarga',
+      codigo: (r.edicao && r.edicao.codigo) || v.codigo || '',
+      placa: v.placa || '',
+      cliente: v.cliente || '',
+      origem: v.origem || '',
+      destino: v.destino || '',
+      peso: peso > 0 ? peso : '',
+      fotos: qtdFotos,
+      iniciadoEm: r.iniciadoEm,
+    };
+  }
+
+  function sincronizarRascunho(form) {
+    if (!E.motorista) return;
+    const r = ls.get(chaveRasc(form), null);
+    const tem = rascunhoTemConteudo(r);
+    const dados = tem ? resumoRascunho(form, r) : null;
+    const assinatura = E.motorista.nome + '|' + JSON.stringify(dados);
+    if (E.ultimoSinc[form] === assinatura) return; // nada mudou desde o último envio
+    const chamada = tem
+      ? chamar('motoristaSalvarRascunho', E.motorista.nome, E.motorista.pin, dados)
+      : chamar('motoristaApagarRascunho', E.motorista.nome, E.motorista.pin, form);
+    chamada.then((res) => { if (res && res.ok) E.ultimoSinc[form] = assinatura; }).catch(() => { /* sem sinal: tenta de novo depois */ });
+  }
+
+  function sincronizarRascunhos() {
+    ['car', 'desc'].forEach(sincronizarRascunho);
+  }
+  window.addEventListener('online', () => setTimeout(sincronizarRascunhos, 3000));
 
   function continuarRascunho(form) {
     if (form === 'car') { abrirCarregamento(); return; }
@@ -1241,7 +1303,13 @@
   }
 
   function salvarRascunho(form) {
-    const r = { campos: coletar(form), fotos: E.fotos[form], idEnvio: E.idEnvio[form], edicao: E.edicao[form], salvoEm: new Date().toISOString() };
+    const anterior = ls.get(chaveRasc(form), null);
+    const r = {
+      campos: coletar(form), fotos: E.fotos[form], idEnvio: E.idEnvio[form], edicao: E.edicao[form],
+      salvoEm: new Date().toISOString(),
+      iniciadoEm: (anterior && anterior.idEnvio === E.idEnvio[form] && anterior.iniciadoEm) || new Date().toISOString(),
+    };
+    agendarSincRascunho(form);
     if (form === 'desc') r.viagem = E.viagemDescarga;
     if (!ls.set(chaveRasc(form), r)) {
       r.fotos = {}; // memória do celular cheia: guarda pelo menos os textos
@@ -1300,6 +1368,7 @@
 
   function limparFormulario(form) {
     ls.del(chaveRasc(form));
+    agendarSincRascunho(form);
     const f = $('form-' + form);
     f.reset();
     f.querySelectorAll('.invalido').forEach((el) => el.classList.remove('invalido'));
