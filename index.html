@@ -106,8 +106,8 @@
 
   .btn-link-esquerda { margin: 6px 0 0; padding: 6px 0; font-size: 16px; }
   .foto { margin-top: 6px; }
-  .foto-botoes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .foto-botoes .btn { margin-top: 0; padding: 12px 8px; font-size: 18px; }
+  .foto-botoes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }   /* câmera, galeria e PDF */
+  .foto-botoes .btn { margin-top: 0; padding: 12px 4px; font-size: 16px; }
   .btn-galeria { font-weight: normal; }
   .miniaturas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
   .miniaturas:empty { display: none; }
@@ -204,7 +204,7 @@
     <section id="tela-entrar" class="tela oculto">
       <img class="logo-entrada" src="logo.png" alt="N Lima Transportes e Logística" onerror="this.remove()">
       <h1>Quem é você?</h1>
-      <label class="rotulo" for="entrar-nome">Motorista</label>
+      <label class="rotulo" for="entrar-nome">Quem está registrando</label>
       <select id="entrar-nome" class="campo"></select>
       <label class="rotulo" for="entrar-pin">PIN (4 números)</label>
       <input id="entrar-pin" class="campo campo-pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off">
@@ -224,7 +224,7 @@
       <div id="em-andamento"></div>
 
       <div class="subtitulo-linha">
-        <h2 class="subtitulo">Minhas viagens</h2>
+        <h2 class="subtitulo">Viagens registradas</h2>
         <button type="button" class="btn-link btn-link-inline" onclick="carregarMinhasViagens()">Atualizar</button>
       </div>
       <div id="minhas-lista"></div>
@@ -239,10 +239,23 @@
         <button type="button" class="btn-link" onclick="limparFormulario('car')">Começar do zero</button>
       </p>
       <form id="form-car" autocomplete="off" onsubmit="return false">
+        <label class="rotulo" for="car-motorista">Motorista da viagem</label>
+        <select id="car-motorista" name="motoristaViagem" class="campo" onchange="aoEscolherMotorista()"></select>
+        <p id="car-motorista-aviso" class="aviso oculto">⏳ Este motorista ainda aguarda a aprovação do escritório. Pode registrar a viagem normalmente.</p>
+        <button type="button" class="btn-link btn-link-esquerda" onclick="mostrarNovoMotorista(true)">+ Cadastrar motorista novo</button>
+        <div id="car-novo-motorista" class="cartao oculto">
+          <label class="rotulo" for="novo-motorista-nome">Nome completo do motorista</label>
+          <input id="novo-motorista-nome" class="campo" placeholder="Nome e sobrenome" autocomplete="off">
+          <p class="pequeno">O cadastro vai para aprovação do escritório. Você já pode usar o nome nesta viagem.</p>
+          <p id="novo-motorista-erro" class="erro oculto"></p>
+          <button type="button" class="btn btn-principal" onclick="cadastrarMotorista()">Cadastrar motorista</button>
+          <button type="button" class="btn btn-voltar" onclick="mostrarNovoMotorista(false)">Cancelar</button>
+        </div>
+
         <label class="rotulo" for="car-placa">Caminhão (placa)</label>
         <select id="car-placa" name="placa" class="campo" onchange="avisarPlacaForaDoVinculo('car')"></select>
-        <button type="button" id="car-outra-placa" class="btn-link btn-link-esquerda oculto" onclick="mostrarTodasAsPlacas('car')">Estou em outro caminhão</button>
-        <p id="car-placa-aviso" class="aviso oculto">⚠️ Esse caminhão não é o seu. A viagem será registrada, mas o escritório recebe um aviso e precisa liberar essa placa.</p>
+        <button type="button" id="car-outra-placa" class="btn-link btn-link-esquerda oculto" onclick="mostrarTodasAsPlacas('car')">Escolher outro caminhão</button>
+        <p id="car-placa-aviso" class="aviso oculto">⚠️ Esse caminhão não é o do motorista escolhido. A viagem será registrada, mas o escritório recebe um aviso e precisa liberar essa placa.</p>
 
         <label class="rotulo" for="car-data">Data do carregamento</label>
         <input id="car-data" name="data" class="campo" type="date">
@@ -278,6 +291,9 @@
             <label class="btn btn-foto btn-galeria">🖼️ Galeria
               <input type="file" accept="image/*" class="oculto">
             </label>
+            <label class="btn btn-foto btn-galeria btn-pdf">📄 PDF
+              <input type="file" accept="application/pdf" class="oculto">
+            </label>
           </div>
           <img class="foto-previa oculto" alt="">
         </div>
@@ -301,7 +317,7 @@
         </div>
 
         <div class="foto foto-multipla" data-fotos="fotosDocs">
-          <span class="rotulo">Foto doc do frete — MDF, CT-e, Contrato, NF Produto (opcional, pode colocar várias)</span>
+          <span class="rotulo">Doc do frete — MDF, CT-e, Contrato, NF Produto (foto ou PDF; opcional, pode colocar vários)</span>
           <div class="miniaturas"></div>
           <div class="foto-botoes">
             <label class="btn btn-foto"><span class="btn-foto-texto">📷 Tirar foto</span>
@@ -309,6 +325,9 @@
             </label>
             <label class="btn btn-foto btn-galeria">🖼️ Galeria
               <input type="file" accept="image/*" multiple class="oculto">
+            </label>
+            <label class="btn btn-foto btn-galeria btn-pdf">📄 PDF
+              <input type="file" accept="application/pdf" multiple class="oculto">
             </label>
           </div>
         </div>
@@ -363,18 +382,24 @@
             <label class="btn btn-foto btn-galeria">🖼️ Galeria
               <input type="file" accept="image/*" class="oculto">
             </label>
+            <label class="btn btn-foto btn-galeria btn-pdf">📄 PDF
+              <input type="file" accept="application/pdf" class="oculto">
+            </label>
           </div>
           <img class="foto-previa oculto" alt="">
         </div>
 
         <div class="foto" data-foto="fotoTicket">
-          <span class="rotulo">Foto do ticket de descarga (opcional)</span>
+          <span class="rotulo">Ticket de descarga (foto ou PDF; opcional)</span>
           <div class="foto-botoes">
             <label class="btn btn-foto"><span class="btn-foto-texto">📷 Tirar foto</span>
               <input type="file" accept="image/*" capture="environment" class="oculto">
             </label>
             <label class="btn btn-foto btn-galeria">🖼️ Galeria
               <input type="file" accept="image/*" class="oculto">
+            </label>
+            <label class="btn btn-foto btn-galeria btn-pdf">📄 PDF
+              <input type="file" accept="application/pdf" class="oculto">
             </label>
           </div>
           <img class="foto-previa oculto" alt="">
@@ -581,19 +606,99 @@
     return ((E.dados && E.dados.caminhoes) || []).find((c) => c.placa === placa) || null;
   }
 
+  // ---------------------------------------------------------------- motorista da viagem
+  // Quem entra no app é só quem REGISTRA (E.motorista = {nome, pin}). O motorista de cada viagem
+  // é escolhido no formulário, a partir da lista que vem do servidor (E.dados.motoristasViagem).
+  function motoristaViagem(nome) {
+    return ((E.dados && E.dados.motoristasViagem) || []).find((m) => m.nome === nome) || null;
+  }
+
+  function preencherMotoristas(selecionado) {
+    const sel = $('car-motorista');
+    const lista = (E.dados && E.dados.motoristasViagem) || [];
+    sel.innerHTML = '<option value="">Escolha o motorista…</option>' + lista.map((m) =>
+      '<option value="' + escapar(m.nome) + '">' + escapar(m.nome + (m.apelido ? ' (' + m.apelido + ')' : '') +
+      (m.pendente ? ' ⏳ aguardando aprovação' : '')) + '</option>'
+    ).join('');
+    if (selecionado && !lista.some((m) => m.nome === selecionado)) {
+      // rascunho/viagem com um nome que não está mais na lista: mantém visível
+      sel.insertAdjacentHTML('beforeend', '<option value="' + escapar(selecionado) + '">' + escapar(selecionado) + '</option>');
+    }
+    sel.value = selecionado || '';
+    const m = motoristaViagem(sel.value);
+    $('car-motorista-aviso').classList.toggle('oculto', !(m && m.pendente));
+  }
+
+  /** Ao trocar o motorista: mostra o caminhão dele (se tiver) e atualiza os avisos. */
+  function aoEscolherMotorista() {
+    const m = motoristaViagem($('car-motorista').value);
+    $('car-motorista-aviso').classList.toggle('oculto', !(m && m.pendente));
+    if (E.edicao.car) { avisarPlacaForaDoVinculo('car'); return; } // na correção a placa não muda
+    E.todasPlacas = E.todasPlacas || {};
+    E.todasPlacas.car = false;
+    preencherPlacas($('car-placa'), placaPadraoDoForm('car') || $('car-placa').value || placaPreferida('car'));
+    avisarPlacaForaDoVinculo('car');
+    avisarKmCarregamento();
+  }
+
+  function mostrarNovoMotorista(mostrar) {
+    $('car-novo-motorista').classList.toggle('oculto', !mostrar);
+    $('novo-motorista-erro').classList.add('oculto');
+    if (mostrar) $('novo-motorista-nome').focus();
+  }
+
+  /** Cria o motorista no servidor (fica "pendente" até o gestor aprovar) e já o seleciona. */
+  async function cadastrarMotorista() {
+    const nome = $('novo-motorista-nome').value.trim().replace(/\s+/g, ' ');
+    const erro = $('novo-motorista-erro');
+    erro.classList.add('oculto');
+    if (nome.length < 5 || nome.indexOf(' ') < 0) {
+      erro.textContent = 'Escreva o nome completo do motorista (nome e sobrenome).';
+      erro.classList.remove('oculto');
+      return;
+    }
+    try {
+      const r = await chamar('motoristaCriarMotorista', E.motorista.nome, E.motorista.pin, nome);
+      if (!r.ok) {
+        if (r.pin) { pinRecusado(r.erro); return; }
+        erro.textContent = r.erro;
+        erro.classList.remove('oculto');
+        return;
+      }
+      E.dados.motoristasViagem = r.motoristas;
+      ls.set('dados', E.dados);
+      preencherMotoristas(r.nome);
+      $('novo-motorista-nome').value = '';
+      mostrarNovoMotorista(false);
+      aoEscolherMotorista();
+      salvarRascunho('car');
+      mensagem(r.jaExistia ? 'Esse motorista já existia: selecionado.' : 'Motorista cadastrado ✅ Aguardando aprovação do escritório.', 6000);
+    } catch (e) {
+      erro.textContent = 'Sem sinal agora. Para cadastrar um motorista é preciso internet.';
+      erro.classList.remove('oculto');
+    }
+  }
+
+  /** Caminhão fixo do motorista escolhido no carregamento ('' se não tiver ou for a descarga). */
+  function placaPadraoDoForm(form) {
+    if (form !== 'car') return '';
+    const m = motoristaViagem($('car-motorista').value);
+    return m && m.placaPadrao && caminhao(m.placaPadrao) ? m.placaPadrao : '';
+  }
+
   /**
-   * Motorista com caminhão cadastrado vê só a placa dele. "Estou em outro caminhão"
+   * Motorista com caminhão cadastrado mostra só a placa dele. "Escolher outro caminhão"
    * libera as demais (o servidor marca a viagem e o gestor precisa liberar).
    */
   function preencherPlacas(select, selecionada) {
     const form = select.id === 'car-placa' ? 'car' : 'desc';
-    const padrao = E.dados.placaPadrao || '';
+    const padrao = placaPadraoDoForm(form);
     E.todasPlacas = E.todasPlacas || {};
-    const restrito = !!padrao && !!caminhao(padrao) && !E.todasPlacas[form] && (!selecionada || selecionada === padrao);
+    const restrito = !!padrao && !E.todasPlacas[form] && (!selecionada || selecionada === padrao);
     const lista = restrito ? E.dados.caminhoes.filter((c) => c.placa === padrao) : E.dados.caminhoes;
     select.innerHTML = lista.map((c) =>
       '<option value="' + escapar(c.placa) + '">' + escapar((c.apelido ? c.apelido + ' – ' : '') + c.placa) +
-      (padrao && c.placa === padrao ? ' (seu caminhão)' : '') + '</option>'
+      (padrao && c.placa === padrao ? ' (caminhão do motorista)' : '') + '</option>'
     ).join('');
     const link = $(form + '-outra-placa');
     if (link) link.classList.toggle('oculto', !restrito);
@@ -601,8 +706,9 @@
     if (selecionada && caminhao(selecionada)) select.value = selecionada;
   }
 
-  function placaPreferida() {
-    if (E.dados.placaPadrao && caminhao(E.dados.placaPadrao)) return E.dados.placaPadrao;
+  function placaPreferida(form) {
+    const padrao = placaPadraoDoForm(form || 'desc');
+    if (padrao) return padrao;
     const ultima = ls.get('ultimaPlaca', '');
     return ultima && caminhao(ultima) ? ultima : '';
   }
@@ -619,7 +725,7 @@
   function avisarPlacaForaDoVinculo(form) {
     const aviso = $(form + '-placa-aviso');
     if (!aviso) return;
-    const padrao = E.dados.placaPadrao || '';
+    const padrao = placaPadraoDoForm(form);
     aviso.classList.toggle('oculto', !(padrao && $(form + '-placa').value && $(form + '-placa').value !== padrao));
   }
 
@@ -854,7 +960,7 @@
       const d = p.payload;
       html += '<div class="cartao"><b>' + escapar(d.codigo || ('Carregamento ' + fmtDataISO(d.data))) + '</b>' +
         '<span class="etiqueta etiqueta-fila">' + NOMES_PENDENTE[p.tipo] + '</span>' +
-        (p.tipo === 'carregamento' ? '<div class="linha">' + escapar(d.placa) + ' · ' + escapar(d.cidadeCarregamento) + ' → ' + escapar(d.cidadeDescarga) + '</div>' : '') +
+        (p.tipo === 'carregamento' ? '<div class="linha">' + escapar(d.motoristaViagem || '') + ' · ' + escapar(d.placa) + ' · ' + escapar(d.cidadeCarregamento) + ' → ' + escapar(d.cidadeDescarga) + '</div>' : '') +
         '</div>';
     });
 
@@ -882,6 +988,7 @@
 
       html += '<div class="cartao">' +
         '<b>' + escapar(v.codigo) + '</b>' + (naFila(v.codigo) ? '' : etiquetaStatus(v.status)) +
+        '<div class="linha">👤 ' + escapar(v.motorista || '—') + ' · ' + escapar(v.placa) + '</div>' +
         '<div class="linha">' + escapar(v.data) + ' · ' + escapar(v.origem) + ' → ' + escapar(v.destino) + '</div>' +
         '<div class="linha">' + escapar(v.cliente) + ' · ' + fmtNum(v.peso, 3) + ' t' +
         (v.pesoDescarga ? ' → ' + fmtNum(v.pesoDescarga, 3) + ' t' : '') + quebra + '</div>' +
@@ -919,6 +1026,7 @@
     const v = E.minhasViagens[i];
     if (!podeAbrirOutroFormulario('car', v.codigo)) return;
     const r = ls.get(chaveRasc('car'), null);
+    preencherMotoristas(v.motorista);
     preencherPlacas($('car-placa'), v.placa);
     if (rascunhoTemConteudo(r) && r.edicao && r.edicao.codigo === v.codigo) {
       aplicarRascunho('car', r);
@@ -927,7 +1035,7 @@
       limparFormulario('car');
       const clienteNaLista = E.dados.clientes.indexOf(v.cliente) >= 0;
       const campos = {
-        placa: v.placa, data: v.dataISO,
+        motoristaViagem: v.motorista, placa: v.placa, data: v.dataISO,
         cidadeCarregamento: v.origem, localCarregamento: v.localCarregamento,
         cidadeDescarga: v.destino, localDescarga: v.localDescarga,
         km: String(v.km), peso: fmtNum(v.peso, 2), valorTon: fmtNum(v.valorTon, 2),
@@ -1014,6 +1122,7 @@
     const peso = lerNumero(c.peso);
     return form === 'car' ? {
       form: 'car',
+      motorista: c.motoristaViagem || '',
       etapa: r.edicao ? 'Correção do carregamento' : 'Carregamento',
       codigo: r.edicao ? r.edicao.codigo : '',
       placa: c.placa || '',
@@ -1025,6 +1134,7 @@
       iniciadoEm: r.iniciadoEm,
     } : {
       form: 'desc',
+      motorista: v.motorista || '',
       etapa: r.edicao ? 'Correção da descarga' : 'Descarga',
       codigo: (r.edicao && r.edicao.codigo) || v.codigo || '',
       placa: v.placa || '',
@@ -1176,13 +1286,13 @@
   }
 
   async function trocarFotoUnica(form, div, arquivo) {
-    mensagem('Preparando a foto…', 8000);
+    mensagem('Preparando o arquivo…', 8000);
     try {
       const dataUrl = await comprimirFoto(arquivo);
       E.fotos[form][div.dataset.foto] = dataUrl;
       mostrarPrevia(div, dataUrl);
       salvarRascunho(form);
-      mensagem('Foto pronta ✅', 2000);
+      mensagem(ehPdf(dataUrl) ? 'PDF pronto ✅' : 'Foto pronta ✅', 2000);
     } catch (e) {
       mensagem(e.message);
     }
@@ -1192,21 +1302,23 @@
     const campo = div.dataset.fotos;
     const lista = E.fotos[form][campo] || [];
     const vagas = MAX_FOTOS_DOCS - lista.length;
-    if (vagas <= 0) { mensagem('Limite de ' + MAX_FOTOS_DOCS + ' fotos de documentos.'); return; }
-    mensagem('Preparando ' + Math.min(vagas, arquivos.length) + ' foto(s)…', 10000);
+    if (vagas <= 0) { mensagem('Limite de ' + MAX_FOTOS_DOCS + ' arquivos de documentos.'); return; }
+    mensagem('Preparando ' + Math.min(vagas, arquivos.length) + ' arquivo(s)…', 10000);
+    let recusados = 0, ultimoErro = '';
     for (const arquivo of arquivos.slice(0, vagas)) {
-      try { lista.push(await comprimirFoto(arquivo)); } catch (e) { mensagem(e.message); }
+      try { lista.push(await comprimirFoto(arquivo)); } catch (e) { recusados++; ultimoErro = e.message; }
     }
     E.fotos[form][campo] = lista;
     desenharMiniaturas(div, lista);
     salvarRascunho(form);
-    mensagem(arquivos.length > vagas ? 'Só cabem ' + MAX_FOTOS_DOCS + ' fotos. As demais ficaram de fora.' : 'Foto(s) pronta(s) ✅', 3000);
+    if (recusados) mensagem(ultimoErro + (recusados > 1 ? ' (' + recusados + ' arquivos não entraram)' : ''), 8000);
+    else mensagem(arquivos.length > vagas ? 'Só cabem ' + MAX_FOTOS_DOCS + ' arquivos. Os demais ficaram de fora.' : 'Arquivo(s) pronto(s) ✅', 3000);
   }
 
   function desenharMiniaturas(div, lista) {
     const caixa = div.querySelector('.miniaturas');
     caixa.innerHTML = (lista || []).map((url, i) =>
-      '<div class="miniatura"><img src="' + url + '" alt="Documento ' + (i + 1) + '">' +
+      '<div class="miniatura"><img src="' + (ehPdf(url) ? ICONE_PDF : url) + '" alt="Documento ' + (i + 1) + '">' +
       '<button type="button" aria-label="Tirar esta foto" data-indice="' + i + '">×</button></div>'
     ).join('');
     caixa.querySelectorAll('button').forEach((b) => {
@@ -1236,8 +1348,33 @@
     try { el.setSelectionRange(fim, fim); } catch (e) { /* alguns teclados não deixam */ }
   }
 
-  /** Reduz para no máximo 1280 px no lado maior e JPEG qualidade 0,7. */
+  // PDF: segue como está (não dá pra "comprimir"), com limite de tamanho. O servidor aceita até 8 MB.
+  const MAX_PDF_BYTES = 6 * 1024 * 1024;
+  const ICONE_PDF = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">' +
+    '<rect width="120" height="120" rx="12" fill="#fde7d6"/><path d="M34 14h38l22 22v70H34z" fill="#fff" stroke="#c0392b" stroke-width="4"/>' +
+    '<path d="M72 14v22h22" fill="none" stroke="#c0392b" stroke-width="4"/>' +
+    '<text x="60" y="84" font-family="Arial" font-size="26" font-weight="bold" text-anchor="middle" fill="#c0392b">PDF</text></svg>');
+
+  function ehPdf(dataUrl) { return typeof dataUrl === 'string' && dataUrl.indexOf('data:application/pdf') === 0; }
+
+  function lerPdf(arquivo) {
+    return new Promise((resolve, reject) => {
+      if (arquivo.size > MAX_PDF_BYTES) { reject(new Error('PDF grande demais (máximo 6 MB). Envie uma versão menor.')); return; }
+      const leitor = new FileReader();
+      leitor.onload = () => {
+        let url = String(leitor.result || '');
+        if (url.indexOf('data:application/pdf') !== 0) url = url.replace(/^data:[^;,]*/, 'data:application/pdf'); // alguns celulares não informam o tipo
+        resolve(url);
+      };
+      leitor.onerror = () => reject(new Error('Não consegui ler o PDF. Tente de novo.'));
+      leitor.readAsDataURL(arquivo);
+    });
+  }
+
+  /** Foto: reduz para no máximo 1280 px no lado maior e JPEG qualidade 0,7. PDF: lê como está. */
   function comprimirFoto(arquivo) {
+    if (arquivo.type === 'application/pdf' || /\.pdf$/i.test(arquivo.name || '')) return lerPdf(arquivo);
     return new Promise((resolve, reject) => {
       const url = URL.createObjectURL(arquivo);
       const img = new Image();
@@ -1262,7 +1399,7 @@
     const texto = div.querySelector('.btn-foto-texto');
     if (!texto.dataset.original) texto.dataset.original = texto.textContent;
     if (dataUrl) {
-      img.src = dataUrl;
+      img.src = ehPdf(dataUrl) ? ICONE_PDF : dataUrl;
       img.classList.remove('oculto');
       botao.classList.add('tem-foto');
       botao.classList.remove('invalido');
@@ -1314,11 +1451,15 @@
     if (!ls.set(chaveRasc(form), r)) {
       r.fotos = {}; // memória do celular cheia: guarda pelo menos os textos
       ls.set(chaveRasc(form), r);
+      if (Object.values(E.fotos[form] || {}).some((v) => Array.isArray(v) ? v.length : v)) {
+        mensagem('Arquivos grandes: a memória do celular está cheia. Envie logo e não feche o app antes disso.', 8000);
+      }
     }
   }
 
   function aplicarRascunho(form, r) {
     const f = $('form-' + form);
+    if (form === 'car') preencherMotoristas(r.campos && r.campos.motoristaViagem);
     // Rascunho feito em outro caminhão: a lista precisa conter essa placa.
     if (form === 'car' && r.campos && r.campos.placa) preencherPlacas($('car-placa'), r.campos.placa);
     Object.keys(r.campos || {}).forEach((nome) => {
@@ -1360,7 +1501,7 @@
 
   function rascunhoTemConteudo(r) {
     if (!r || !r.campos) return false;
-    const ignorar = { placa: 1, data: 1 };
+    const ignorar = { placa: 1, data: 1, motoristaViagem: 1 };
     const vazio = (v) => !String(v).trim() || String(v).trim() === '0,00';
     return Object.keys(r.campos).some((k) => !ignorar[k] && !vazio(r.campos[k])) ||
       Object.values(r.fotos || {}).some((v) => Array.isArray(v) ? v.length > 0 : !!v);
@@ -1382,10 +1523,12 @@
     $(form + '-rascunho').classList.add('oculto');
     if (form === 'car') {
       mostrarClienteOutro(false);
+      mostrarNovoMotorista(false);
       $('car-data').value = hojeISO();
       E.todasPlacas = E.todasPlacas || {};
       E.todasPlacas.car = false;
-      preencherPlacas($('car-placa'), placaPreferida());
+      preencherMotoristas('');
+      preencherPlacas($('car-placa'), placaPreferida('car'));
       $('car-placa-aviso').classList.add('oculto');
       $('car-km-aviso').classList.add('oculto');
       calcularFrete();
@@ -1398,7 +1541,8 @@
 
   // ---------------------------------------------------------------- carregamento
   function abrirCarregamento() {
-    preencherPlacas($('car-placa'), placaPreferida());
+    preencherMotoristas('');
+    preencherPlacas($('car-placa'), placaPreferida('car'));
     const r = ls.get(chaveRasc('car'), null);
     if (rascunhoTemConteudo(r)) {
       aplicarRascunho('car', r);
@@ -1440,6 +1584,7 @@
     const clienteInp = $('car-cliente');
     const ehOutro = clienteInp.dataset.ok === 'outro';
 
+    if (!c.motoristaViagem) erro('car-motorista', 'Escolha o motorista da viagem.');
     if (!c.placa) erro('car-placa', 'Escolha o caminhão.');
     if (!c.data) erro('car-data', 'Informe a data do carregamento.');
     else if (c.data > hojeISO()) erro('car-data', 'A data do carregamento não pode ser no futuro.');
@@ -1462,7 +1607,8 @@
 
     const payload = {
       idEnvio: E.idEnvio.car,
-      motorista: E.motorista.nome,
+      motorista: E.motorista.nome,          // quem está registrando (acesso)
+      motoristaViagem: c.motoristaViagem,   // motorista da viagem
       pin: E.motorista.pin,
       placa: c.placa,
       data: c.data,
@@ -1539,6 +1685,7 @@
       abertas.map((v, i) =>
         '<div class="cartao cartao-viagem" onclick="escolherViagem(' + i + ')">' +
         '<b>' + escapar(v.codigo) + '</b>' +
+        '<div class="linha">👤 ' + escapar(v.motorista || '—') + '</div>' +
         '<div class="linha">' + escapar(v.data) + ' · ' + escapar(v.origem) + ' → ' + escapar(v.destino) + '</div>' +
         '<div class="linha">' + escapar(v.cliente) + ' · ' + fmtNum(v.peso, 3) + ' t</div>' +
         '</div>'
@@ -1790,7 +1937,7 @@
     if (item.tipo === 'carregamento' || item.tipo === 'edicaoCarregamento') {
       return [
         (correcao ? '✏️ *CARREGAMENTO CORRIGIDO* – ' : '🚛 *CARREGAMENTO* – ') + r.codigo,
-        'Motorista: ' + p.motorista,
+        'Motorista: ' + (p.motoristaViagem || p.motorista),
         'Placa: ' + p.placa,
         'Data: ' + fmtDataISO(p.data),
         'De: ' + p.cidadeCarregamento + (p.localCarregamento ? ' (' + p.localCarregamento + ')' : ''),
@@ -1800,6 +1947,7 @@
         'Km: ' + fmtKm(p.km),
         p.obs ? 'Obs.: ' + p.obs : '',
         r.foraDoVinculo ? '⚠️ Placa fora do vínculo do motorista — aguardando liberação do escritório' : '',
+        r.motoristaPendente ? '⏳ Motorista novo — aguardando aprovação do escritório' : '',
       ].filter(Boolean).join('\n');
     }
     const v = item.viagem || {};
@@ -1807,7 +1955,7 @@
     const pct = v.peso ? ((v.peso - p.peso) / v.peso * 100) : 0;
     return [
       (correcao ? '✏️ *DESCARGA CORRIGIDA* – ' : '📦 *DESCARGA* – ') + r.codigo,
-      'Motorista: ' + p.motorista,
+      'Motorista: ' + (v.motorista || p.motorista),
       'Data: ' + fmtDataISO(p.data),
       v.destino ? 'Local: ' + v.destino : '',
       'Peso descarregado: ' + fmtNum(p.peso, 3) + ' t',
