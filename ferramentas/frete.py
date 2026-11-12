@@ -88,7 +88,7 @@ def imprime(r: dict) -> None:
     linhas = [
         ("Km total (ida + volta)", f"{r['km_total']:,.0f} km".replace(',', '.')),
         ("% km vazio", f"{r['pct_km_vazio']:.0%}"),
-        ("Diesel", f"{brl(r['diesel'])} ({r['litros_diesel']:,.0f} L)".replace(',', '.') if False else f"{brl(r['diesel'])} ({r['litros_diesel']:.0f} L)"),
+        ("Diesel", f"{brl(r['diesel'])} ({r['litros_diesel']:.0f} L)"),
         ("ARLA 32", brl(r["arla"])), ("Pneus", brl(r["pneus"])),
         ("Manutenção", brl(r["manutencao"])), ("Pedágios", brl(r["pedagios"])),
         ("Comissão motorista", brl(r["comissao"])),
