@@ -686,23 +686,32 @@
     return m && m.placaPadrao && caminhao(m.placaPadrao) ? m.placaPadrao : '';
   }
 
+  /** Outras placas liberadas em definitivo para o motorista escolhido (só no carregamento). */
+  function placasLiberadasDoForm(form) {
+    if (form !== 'car') return [];
+    const m = motoristaViagem($('car-motorista').value);
+    return m && Array.isArray(m.placasLiberadas) ? m.placasLiberadas.filter((p) => caminhao(p)) : [];
+  }
+
   /**
-   * Motorista com caminhão cadastrado mostra só a placa dele. "Escolher outro caminhão"
+   * Motorista com caminhão cadastrado mostra só a placa dele (e as liberadas em definitivo). "Escolher outro caminhão"
    * libera as demais (o servidor marca a viagem e o gestor precisa liberar).
    */
   function preencherPlacas(select, selecionada) {
     const form = select.id === 'car-placa' ? 'car' : 'desc';
     const padrao = placaPadraoDoForm(form);
     E.todasPlacas = E.todasPlacas || {};
-    const restrito = !!padrao && !E.todasPlacas[form] && (!selecionada || selecionada === padrao);
-    const lista = restrito ? E.dados.caminhoes.filter((c) => c.placa === padrao) : E.dados.caminhoes;
+    const liberadas = placasLiberadasDoForm(form);
+    const permitidas = padrao ? [padrao].concat(liberadas) : [];
+    const restrito = !!padrao && !E.todasPlacas[form] && (!selecionada || permitidas.indexOf(selecionada) >= 0);
+    const lista = restrito ? E.dados.caminhoes.filter((c) => permitidas.indexOf(c.placa) >= 0) : E.dados.caminhoes;
     select.innerHTML = lista.map((c) =>
       '<option value="' + escapar(c.placa) + '">' + escapar((c.apelido ? c.apelido + ' – ' : '') + c.placa) +
       (padrao && c.placa === padrao ? ' (caminhão do motorista)' : '') + '</option>'
     ).join('');
     const link = $(form + '-outra-placa');
     if (link) link.classList.toggle('oculto', !restrito);
-    if (restrito) selecionada = padrao;
+    if (restrito && permitidas.indexOf(selecionada) < 0) selecionada = padrao;
     if (selecionada && caminhao(selecionada)) select.value = selecionada;
   }
 
@@ -726,7 +735,8 @@
     const aviso = $(form + '-placa-aviso');
     if (!aviso) return;
     const padrao = placaPadraoDoForm(form);
-    aviso.classList.toggle('oculto', !(padrao && $(form + '-placa').value && $(form + '-placa').value !== padrao));
+    const atual = $(form + '-placa').value;
+    aviso.classList.toggle('oculto', !(padrao && atual && atual !== padrao && placasLiberadasDoForm(form).indexOf(atual) < 0));
   }
 
   // ---------------------------------------------------------------- instalar como aplicativo
