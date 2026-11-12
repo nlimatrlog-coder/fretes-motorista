@@ -49,6 +49,8 @@
 - Planilhas em `.xlsx`/`.csv`; textos em `.md`.
 - ⚠️ **Repositório público + GitHub Pages:** tudo aqui fica visível na internet. Não gravar dados sensíveis
   (valores reais de contrato, CPF/CNPJ de terceiros, dados bancários, documentos) enquanto o repositório for público.
+- **Decisão do sócio (12/11/2026):** dados sensíveis ficam numa pasta/repositório privado **no notebook dele**.
+  Aqui só ficam modelos, ferramentas e textos sem dados confidenciais.
 
 ## Comandos rápidos
 - **"calcula o frete"** → pedir origem, destino, km, toneladas, R$/t e caminhão; devolver custo, receita, margem e veredito.
