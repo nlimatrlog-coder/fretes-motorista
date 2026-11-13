@@ -1,4 +1,4 @@
-const CACHE = 'fretes-20261112162838';
+const CACHE = 'fretes-20261112215528';
 const ARQUIVOS = ['./', './index.html', './manifest.webmanifest', './icone-192.png', './icone-512.png', './icone-180.png', './logo.png'];
 
 self.addEventListener('install', (e) => {

@@ -227,6 +227,9 @@
         <h2 class="subtitulo">Viagens registradas</h2>
         <button type="button" class="btn-link btn-link-inline" onclick="carregarMinhasViagens()">Atualizar</button>
       </div>
+      <div id="minhas-filtro" class="oculto">
+        <select id="minhas-filtro-placa" class="campo" aria-label="Filtrar por caminhão" onchange="aplicarFiltroMinhas()"></select>
+      </div>
       <div id="minhas-lista"></div>
     </section>
 
@@ -960,7 +963,31 @@
     edicaoDescarga: 'Correção da descarga aguardando envio',
   };
 
-  function desenharMinhasViagens(viagens, offline) {
+  /** Filtro por placa da lista "Viagens registradas" (a lista já vem inteira; o filtro é no próprio aparelho). */
+  function aplicarFiltroMinhas() {
+    ls.set('filtroPlacaMinhas', $('minhas-filtro-placa').value);
+    if (E.minhasTodas) desenharMinhasViagens(E.minhasTodas, E.minhasOffline);
+  }
+
+  function montarFiltroPlacaMinhas(todas) {
+    const sel = $('minhas-filtro-placa');
+    const atual = sel.value || ls.get('filtroPlacaMinhas', '');
+    const placas = Array.from(new Set(todas.map((v) => v.placa).filter(Boolean))).sort();
+    sel.innerHTML = '<option value="">Todos os caminhões (' + todas.length + ')</option>' + placas.map((p) => {
+      const c = caminhao(p);
+      const n = todas.filter((v) => v.placa === p).length;
+      return '<option value="' + escapar(p) + '">' + escapar((c && c.apelido ? c.apelido + ' – ' : '') + p) + ' (' + n + ')</option>';
+    }).join('');
+    sel.value = placas.indexOf(atual) >= 0 ? atual : '';
+    $('minhas-filtro').classList.toggle('oculto', placas.length < 2);
+  }
+
+  function desenharMinhasViagens(todas, offline) {
+    E.minhasTodas = todas;
+    E.minhasOffline = offline;
+    montarFiltroPlacaMinhas(todas);
+    const filtro = $('minhas-filtro-placa').value;
+    const viagens = filtro ? todas.filter((v) => v.placa === filtro) : todas;
     const pendentes = ls.get('pendentes', []).filter((p) => p.payload.motorista === E.motorista.nome);
     const naFila = (codigo) => pendentes.some((p) => p.payload.codigo === codigo);
     let html = offline ? '<p class="aviso">Sem sinal: mostrando a última lista guardada no celular.</p>' : '';
@@ -1009,7 +1036,8 @@
     });
 
     $('minhas-lista').innerHTML = html ||
-      '<div class="cartao">Nenhuma viagem registrada ainda. Toque em <b>CARREGAMENTO</b> para começar.</div>';
+      (filtro ? '<div class="cartao">Nenhuma viagem deste caminhão. Escolha "Todos os caminhões" no filtro acima.</div>'
+              : '<div class="cartao">Nenhuma viagem registrada ainda. Toque em <b>CARREGAMENTO</b> para começar.</div>');
   }
 
   function descarregarMinhaViagem(i) {
